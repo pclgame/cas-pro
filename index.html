@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>C.A.S. PRO Cloud</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
+    <style>
+        :root { --bg: #0f172a; --card: #1e293b; --accent: #3498db; --green: #2ecc71; --red: #e74c3c; }
+        body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); color: white; margin: 0; padding: 20px; }
+        h2 { text-align: center; color: var(--accent); }
+        #status { text-align: center; font-size: 12px; margin-bottom: 20px; color: #94a3b8; }
+        
+        .dev-card { 
+            background: var(--card); border-radius: 15px; padding: 18px; margin-bottom: 12px;
+            display: flex; justify-content: space-between; align-items: center;
+            border-left: 6px solid var(--accent); box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .offline { border-left-color: #64748b; opacity: 0.7; }
+        .data-right { text-align: right; }
+        .money { font-size: 1.2em; font-weight: bold; color: var(--green); }
+
+        /* Overlay e Modal */
+        .overlay { 
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9); z-index: 1000; align-items: center; justify-content: center;
+            backdrop-filter: blur(8px);
+        }
+        .modal { 
+            background: var(--card); width: 90%; max-height: 90vh; border-radius: 25px;
+            padding: 25px; box-sizing: border-box; overflow-y: auto; text-align: center;
+        }
+
+        .wifi-info { background: #1e3a8a; padding: 12px; border-radius: 12px; text-align: left; margin: 15px 0; font-size: 14px; }
+        .btn-row { display: flex; gap: 10px; margin: 15px 0; }
+        
+        label { display: block; text-align: left; font-size: 12px; color: var(--accent); font-weight: bold; margin-top: 10px; }
+        input { width: 100%; padding: 12px; margin: 8px 0; border-radius: 10px; border: none; background: #334155; color: white; font-size: 16px; box-sizing: border-box; }
+        
+        button { width: 100%; padding: 15px; border-radius: 12px; border: none; font-weight: bold; font-size: 15px; cursor: pointer; transition: 0.2s; }
+        .btn-start { background: var(--green); color: #000; }
+        .btn-stop { background: var(--red); color: white; }
+        .btn-save { background: var(--accent); color: white; margin-top: 15px; }
+        .btn-reset { background: #e67e22; color: white; }
+        .btn-close { background: #475569; color: white; margin-top: 10px; }
+    </style>
+</head>
+<body>
+
+    <h2>C.A.S. PRO SYSTEM</h2>
+    <div id="status">Connessione in corso...</div>
+    <div id="device-list"></div>
+
+    <div id="overlay" class="overlay">
+        <div class="modal">
+            <h3 id="m-name" style="margin-top:0">Nome Modulo</h3>
+            <p id="m-mac" style="font-size:11px; opacity:0.5; margin-top:-10px"></p>
+            
+            <div class="wifi-info">
+                <strong>📡 Rete Wi-Fi:</strong><br>
+                SSID: <span id="m-ssid">-</span><br>
+                PASS: <span id="m-pass">-</span>
+            </div>
+
+            <label>AZIONI TEMPO:</label>
+            <div class="btn-row">
+                <button class="btn-start" onclick="sendCmd('REMOTE_START', false)">+ START</button>
+                <button class="btn-stop" onclick="if(confirm('Fermare il timer?')) sendCmd('REMOTE_STOP', false)">STOP</button>
+            </div>
+
+            <label>CONFIGURAZIONE PARAMETRI:</label>
+            <input type="number" id="in-sec" placeholder="Secondi per impulso">
+            <input type="number" id="in-min" placeholder="Impulsi minimi">
+            <input type="number" id="in-val" step="0.01" placeholder="Valore moneta €">
+
+            <button class="btn-save" onclick="saveConfig()">SALVA CONFIGURAZIONE</button>
+            <button class="btn-reset" onclick="resetMoney()">RESET INCASSO</button>
+            <button class="btn-close" onclick="closeModal()">CHIUDI</button>
+        </div>
+    </div>
+
+    <script>
+        const MQTT_CONFIG = {
+            host: "4c3d155d119d45b48f9a1d88d1963d9a.s1.eu.hivemq.cloud",
+            port: 8884,
+            user: "admin_cas_system",
+            pass: "CAS_gate_2026!#",
+            clientId: "iphone_" + Math.random().toString(16).substr(2, 8)
+        };
+
+        let devices = {};
+        let currentMac = "";
+
+        const client = new Paho.MQTT.Client(MQTT_CONFIG.host, MQTT_CONFIG.port, MQTT_CONFIG.clientId);
+
+        client.onMessageArrived = (message) => {
+            try {
+                const data = JSON.parse(message.payloadString);
+                devices[data.mac] = { data: data, lastSeen: Date.now() };
+                renderList();
+            } catch (e) { console.error("Errore parsing JSON", e); }
+        };
+
+        client.onConnectionLost = (e) => {
+            document.getElementById('status').innerText = "Riconnessione...";
+            setTimeout(connectMQTT, 3000);
+        };
+
+        function connectMQTT() {
+            client.connect({
+                useSSL: true,
+                userName: MQTT_CONFIG.user,
+                password: MQTT_CONFIG.pass,
+                onSuccess: () => {
+                    document.getElementById('status').innerText = "● CLOUD ONLINE";
+                    document.getElementById('status').style.color = "#2ecc71";
+                    client.subscribe("cas_system/status/#");
+                },
+                onFailure: (e) => {
+                    document.getElementById('status').innerText = "Errore Connessione";
+                    setTimeout(connectMQTT, 5000);
+                }
+            });
+        }
+
+        function renderList() {
+            const listDiv = document.getElementById('device-list');
+            listDiv.innerHTML = "";
+            const now = Date.now();
+
+            Object.keys(devices).sort().forEach(mac => {
+                const d = devices[mac].data;
+                const isOffline = (now - devices[mac].lastSeen) > 25000;
+                
+                const card = document.createElement('div');
+                card.className = `dev-card ${isOffline ? 'offline' : ''}`;
+                card.onclick = () => openModal(mac);
+                
+                card.innerHTML = `
+                    <div>
+                        <strong>${d.dev.toUpperCase()}</strong><br>
+                        <small>${mac}</small>
+                    </div>
+                    <div class="data-right">
+                        <div class="money">${d.money.toFixed(2)}€</div>
+                        <small>${Math.round(d.sec)}s</small>
+                    </div>
+                `;
+                listDiv.appendChild(card);
+            });
+        }
+
+        function openModal(mac) {
+            currentMac = mac;
+            const d = devices[mac].data;
+            document.getElementById('m-name').innerText = d.dev;
+            document.getElementById('m-mac').innerText = mac;
+            document.getElementById('m-ssid').innerText = d.wifi_ssid || "-";
+            document.getElementById('m-pass').innerText = d.wifi_pass || "-";
+            document.getElementById('in-sec').value = d.sec_p;
+            document.getElementById('in-min').value = d.min_i;
+            document.getElementById('in-val').value = d.c_val;
+            document.getElementById('overlay').style.display = "flex";
+        }
+
+        function closeModal() { document.getElementById('overlay').style.display = "none"; }
+
+        function sendCmd(payload, retain) {
+            const msgBody = typeof payload === 'object' ? payload : { cmd: payload };
+            const message = new Paho.MQTT.Message(JSON.stringify(msgBody));
+            message.destinationName = `cas_system/cmd/${currentMac}`;
+            message.retained = retain;
+            client.send(message);
+            if (!retain) alert("Comando inviato!");
+        }
+
+        function saveConfig() {
+            const config = {
+                sec_p: parseInt(document.getElementById('in-sec').value),
+                min_i: parseInt(document.getElementById('in-min').value),
+                c_val: parseFloat(document.getElementById('in-val').value)
+            };
+            sendCmd(config, true);
+            closeModal();
+        }
+
+        function resetMoney() {
+            if(confirm("Azzerare incasso modulo?")) {
+                sendCmd("RESET_TOTAL", true);
+                closeModal();
+            }
+        }
+
+        connectMQTT();
+        setInterval(renderList, 10000); // Refresh ogni 10s
+    </script>
+</body>
+</html>
