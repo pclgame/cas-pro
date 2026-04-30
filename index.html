@@ -133,9 +133,19 @@
         client.onMessageArrived = (message) => {
             try {
                 const data = JSON.parse(message.payloadString);
-                devices[data.mac] = { data: data, lastSeen: Date.now() };
+                const mac = data.mac;
+                
+                // USIAMO LO STESSO METODO PYTHON:
+                // Se il pacchetto ha un timestamp (ts), usiamo quello, 
+                // altrimenti usiamo il momento dell'arrivo solo se è il primo messaggio.
+                let msgTime = data.ts ? (data.ts * 1000) : Date.now();
+                
+                devices[mac] = { 
+                    data: data, 
+                    lastSeen: msgTime 
+                };
                 renderList();
-            } catch (e) {}
+            } catch (e) { console.log("Errore JSON:", e); }
         };
 
         client.onConnectionLost = () => {
@@ -164,19 +174,22 @@
             const listDiv = document.getElementById('device-list');
             const now = Date.now();
             
-            // Ordiniamo per nome
             const sortedMacs = Object.keys(devices).sort((a, b) => 
                 devices[a].data.dev.localeCompare(devices[b].data.dev));
 
             let html = "";
             sortedMacs.forEach(mac => {
                 const d = devices[mac].data;
+                
+                // CALCOLO DIFFERENZA (Esattamente come in Python)
                 const diffSec = Math.floor((now - devices[mac].lastSeen) / 1000);
-                const isOffline = diffSec > 30; // Considerato offline dopo 30 secondi
+                
+                // Se non riceve dati da più di 25 secondi (come nel tuo Python) è OFFLINE
+                const isOffline = diffSec > 25; 
                 
                 let timeStatus = isOffline ? 
                     `<span class="time-badge" style="color:#ef4444">Offline da ${formatTime(diffSec)}</span>` : 
-                    `<span class="time-badge" style="color:#10b981">In linea ora</span>`;
+                    `<span class="time-badge" style="color:#10b981">● LIVE ONLINE</span>`;
 
                 html += `
                     <div class="dev-card ${isOffline ? 'offline' : ''}" onclick="openModal('${mac}')">
@@ -187,7 +200,7 @@
                         </div>
                         <div class="data-right">
                             <div class="money">${d.money.toFixed(2)}€</div>
-                            <div class="timer-active">${Math.round(d.sec)}s residui</div>
+                            <div class="timer-active">${Math.round(d.sec)}s</div>
                         </div>
                     </div>
                 `;
@@ -198,9 +211,11 @@
         function formatTime(s) {
             if (s < 60) return s + "s";
             if (s < 3600) return Math.floor(s/60) + "m";
-            return Math.floor(s/3600) + "h";
+            if (s < 86400) return Math.floor(s/3600) + "h";
+            return Math.floor(s/86400) + "gg";
         }
 
+        // Funzioni modale rimangono invariate...
         function openModal(mac) {
             currentMac = mac;
             const d = devices[mac].data;
@@ -213,43 +228,31 @@
             document.getElementById('in-val').value = d.c_val;
             document.getElementById('overlay').style.display = "flex";
         }
-
         function closeModal() { document.getElementById('overlay').style.display = "none"; }
-
         function sendCmd(payload, retain) {
             const msgBody = typeof payload === 'object' ? payload : { cmd: payload };
             const message = new Paho.MQTT.Message(JSON.stringify(msgBody));
             message.destinationName = `cas_system/cmd/${currentMac}`;
             message.retained = retain;
             client.send(message);
-            if (!retain) {
-                const btn = event.target;
-                const oldTxt = btn.innerText;
-                btn.innerText = "INVIATO!";
-                setTimeout(() => btn.innerText = oldTxt, 1000);
-            }
         }
-
         function saveConfig() {
             const config = {
+                dev: document.getElementById('m-name').innerText, // Mantiene il nome attuale
                 sec_p: parseInt(document.getElementById('in-sec').value),
                 min_i: parseInt(document.getElementById('in-min').value),
                 c_val: parseFloat(document.getElementById('in-val').value)
             };
             sendCmd(config, true);
-            alert("Configurazione salvata nel Cloud");
             closeModal();
         }
-
         function resetMoney() {
-            if(confirm("Questa azione azzererà i soldi accumulati su questo dispositivo. Continuare?")) {
+            if(confirm("Azzero incasso?")) {
                 sendCmd("RESET_TOTAL", true);
                 closeModal();
             }
         }
 
         connectMQTT();
-        setInterval(renderList, 1000); // Aggiorna i timer ogni secondo
+        setInterval(renderList, 1000); 
     </script>
-</body>
-</html>
