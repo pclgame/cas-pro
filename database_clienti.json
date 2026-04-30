@@ -4,5 +4,11 @@
         "ruolo": "admin",
         "mac": [],
         "scadenza": "2099-12-31"
+    },
+    "1111": {
+        "nome": "la rosa dei venti",
+        "mac": [],
+        "scadenza": "2026-12-31",
+        "ruolo": "cliente"
     }
 }
