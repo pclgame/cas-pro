@@ -3,79 +3,116 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>C.A.S. PRO Cloud</title>
+    <title>C.A.S. ADMIN PANEL</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
     <style>
-        :root { --bg: #0f172a; --card: #1e293b; --accent: #3498db; --green: #2ecc71; --red: #e74c3c; }
-        body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); color: white; margin: 0; padding: 20px; }
-        h2 { text-align: center; color: var(--accent); }
-        #status { text-align: center; font-size: 12px; margin-bottom: 20px; color: #94a3b8; }
-        
-        .dev-card { 
-            background: var(--card); border-radius: 15px; padding: 18px; margin-bottom: 12px;
-            display: flex; justify-content: space-between; align-items: center;
-            border-left: 6px solid var(--accent); box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        :root { 
+            --bg: #0f172a; --card: #1e293b; --accent: #3b82f6; 
+            --green: #10b981; --red: #ef4444; --yellow: #f59e0b; --text: #f8fafc; 
         }
-        .offline { border-left-color: #64748b; opacity: 0.7; }
-        .data-right { text-align: right; }
-        .money { font-size: 1.2em; font-weight: bold; color: var(--green); }
+        
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: env(safe-area-inset-top) 15px 20px 15px; }
+        
+        /* Header */
+        .header { text-align: center; padding: 20px 0; }
+        .header h2 { margin: 0; font-size: 22px; letter-spacing: 1px; color: var(--accent); }
+        #status-bar { font-size: 11px; font-weight: bold; margin-top: 5px; padding: 4px 12px; border-radius: 20px; display: inline-block; background: #334155; }
+        .status-online { color: var(--green); }
+        .status-offline { color: var(--red); }
 
-        /* Overlay e Modal */
+        /* Griglia Dispositivi */
+        #device-list { display: grid; gap: 15px; margin-top: 10px; }
+
+        .dev-card { 
+            background: var(--card); border-radius: 20px; padding: 20px;
+            display: flex; justify-content: space-between; align-items: center;
+            border: 1px solid rgba(255,255,255,0.05); transition: 0.3s;
+            position: relative; overflow: hidden;
+        }
+        
+        /* Indicatore Online/Offline laterale */
+        .dev-card::before {
+            content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 6px; background: var(--accent);
+        }
+
+        .offline { opacity: 0.8; filter: grayscale(0.5); }
+        .offline::before { background: #64748b !important; }
+        
+        .info-left h3 { margin: 0; font-size: 18px; color: var(--text); }
+        .info-left small { font-family: monospace; color: #94a3b8; font-size: 11px; }
+        .time-badge { font-size: 10px; padding: 2px 6px; border-radius: 4px; background: rgba(0,0,0,0.3); margin-top: 5px; display: inline-block; }
+
+        .data-right { text-align: right; }
+        .money { font-size: 22px; font-weight: 800; color: var(--green); }
+        .timer-active { color: var(--yellow); font-weight: bold; font-size: 14px; }
+
+        /* Modale */
         .overlay { 
-            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.9); z-index: 1000; align-items: center; justify-content: center;
-            backdrop-filter: blur(8px);
+            display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); 
+            z-index: 1000; align-items: center; justify-content: center; backdrop-filter: blur(10px);
         }
         .modal { 
-            background: var(--card); width: 90%; max-height: 90vh; border-radius: 25px;
-            padding: 25px; box-sizing: border-box; overflow-y: auto; text-align: center;
+            background: var(--card); width: 92%; max-height: 85vh; border-radius: 30px;
+            padding: 25px; box-sizing: border-box; overflow-y: auto; position: relative;
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
         }
 
-        .wifi-info { background: #1e3a8a; padding: 12px; border-radius: 12px; text-align: left; margin: 15px 0; font-size: 14px; }
-        .btn-row { display: flex; gap: 10px; margin: 15px 0; }
+        .wifi-box { background: rgba(59, 130, 246, 0.1); border: 1px solid var(--accent); border-radius: 15px; padding: 15px; margin: 15px 0; text-align: left; }
+        .wifi-box code { color: var(--accent); font-weight: bold; }
+
+        .btn-group { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 15px 0; }
         
-        label { display: block; text-align: left; font-size: 12px; color: var(--accent); font-weight: bold; margin-top: 10px; }
-        input { width: 100%; padding: 12px; margin: 8px 0; border-radius: 10px; border: none; background: #334155; color: white; font-size: 16px; box-sizing: border-box; }
+        label { display: block; text-align: left; font-size: 11px; text-transform: uppercase; color: #94a3b8; margin-bottom: 5px; margin-top: 15px; }
+        input { width: 100%; padding: 14px; border-radius: 12px; border: 1px solid #334155; background: #0f172a; color: white; font-size: 16px; box-sizing: border-box; }
         
-        button { width: 100%; padding: 15px; border-radius: 12px; border: none; font-weight: bold; font-size: 15px; cursor: pointer; transition: 0.2s; }
-        .btn-start { background: var(--green); color: #000; }
-        .btn-stop { background: var(--red); color: white; }
-        .btn-save { background: var(--accent); color: white; margin-top: 15px; }
-        .btn-reset { background: #e67e22; color: white; }
-        .btn-close { background: #475569; color: white; margin-top: 10px; }
+        button { border: none; font-weight: bold; border-radius: 15px; cursor: pointer; transition: active 0.1s; }
+        button:active { transform: scale(0.97); }
+        
+        .btn-start { background: var(--green); color: #064e3b; padding: 18px; }
+        .btn-stop { background: var(--red); color: white; padding: 18px; }
+        .btn-save { background: var(--accent); color: white; padding: 15px; width: 100%; margin-top: 10px; }
+        .btn-reset { background: #475569; color: #cbd5e1; padding: 10px; font-size: 12px; margin-top: 20px; }
+        .btn-close { position: absolute; top: 15px; right: 15px; background: #334155; color: white; width: 30px; height: 30px; border-radius: 50%; font-size: 12px; }
+
     </style>
 </head>
 <body>
 
-    <h2>C.A.S. PRO SYSTEM</h2>
-    <div id="status">Connessione in corso...</div>
-    <div id="device-list"></div>
+    <div class="header">
+        <h2>C.A.S. SYSTEM 2026</h2>
+        <div id="status-bar">CONNESSIONE...</div>
+    </div>
 
+    <div id="device-list">
+        <!-- I dispositivi appariranno qui -->
+    </div>
+
+    <!-- Modal Dettagli -->
     <div id="overlay" class="overlay">
         <div class="modal">
-            <h3 id="m-name" style="margin-top:0">Nome Modulo</h3>
-            <p id="m-mac" style="font-size:11px; opacity:0.5; margin-top:-10px"></p>
+            <button class="btn-close" onclick="closeModal()">✕</button>
+            <h3 id="m-name" style="margin:0">Modulo</h3>
+            <p id="m-mac" style="font-size:11px; opacity:0.5; margin-bottom:20px"></p>
             
-            <div class="wifi-info">
-                <strong>📡 Rete Wi-Fi:</strong><br>
-                SSID: <span id="m-ssid">-</span><br>
-                PASS: <span id="m-pass">-</span>
+            <div class="wifi-box">
+                <span style="font-size:12px; display:block; margin-bottom:5px">📡 PARAMETRI RETE:</span>
+                SSID: <code id="m-ssid">-</code><br>
+                PASS: <code id="m-pass">-</code>
             </div>
 
-            <label>AZIONI TEMPO:</label>
-            <div class="btn-row">
-                <button class="btn-start" onclick="sendCmd('REMOTE_START', false)">+ START</button>
-                <button class="btn-stop" onclick="if(confirm('Fermare il timer?')) sendCmd('REMOTE_STOP', false)">STOP</button>
+            <label>Comandi Rapidi</label>
+            <div class="btn-group">
+                <button class="btn-start" onclick="sendCmd('REMOTE_START', false)">+ 1 START</button>
+                <button class="btn-stop" onclick="if(confirm('Fermare?')) sendCmd('REMOTE_STOP', false)">STOP</button>
             </div>
 
-            <label>CONFIGURAZIONE PARAMETRI:</label>
-            <input type="number" id="in-sec" placeholder="Secondi per impulso">
-            <input type="number" id="in-min" placeholder="Impulsi minimi">
-            <input type="number" id="in-val" step="0.01" placeholder="Valore moneta €">
+            <label>Impostazioni Modulo</label>
+            <input type="number" id="in-sec" placeholder="Secondi x Impulso">
+            <input type="number" id="in-min" placeholder="Impulsi Minimi">
+            <input type="number" id="in-val" step="0.01" placeholder="Valore €">
 
-            <button class="btn-save" onclick="saveConfig()">SALVA CONFIGURAZIONE</button>
-            <button class="btn-reset" onclick="resetMoney()">RESET INCASSO</button>
-            <button class="btn-close" onclick="closeModal()">CHIUDI</button>
+            <button class="btn-save" onclick="saveConfig()">AGGIORNA CONFIGURAZIONE</button>
+            <button class="btn-reset" onclick="resetMoney()">AZZERA INCASSO TOTALIZZATORE</button>
         </div>
     </div>
 
@@ -85,7 +122,7 @@
             port: 8884,
             user: "admin_cas_system",
             pass: "CAS_gate_2026!#",
-            clientId: "iphone_" + Math.random().toString(16).substr(2, 8)
+            clientId: "admin_web_" + Math.random().toString(16).substr(2, 5)
         };
 
         let devices = {};
@@ -98,65 +135,79 @@
                 const data = JSON.parse(message.payloadString);
                 devices[data.mac] = { data: data, lastSeen: Date.now() };
                 renderList();
-            } catch (e) { console.error("Errore parsing JSON", e); }
+            } catch (e) {}
         };
 
-        client.onConnectionLost = (e) => {
-            document.getElementById('status').innerText = "Riconnessione...";
+        client.onConnectionLost = () => {
+            updateStatus("OFFLINE / RICONNESSIONE", "status-offline");
             setTimeout(connectMQTT, 3000);
         };
 
         function connectMQTT() {
             client.connect({
-                useSSL: true,
-                userName: MQTT_CONFIG.user,
-                password: MQTT_CONFIG.pass,
+                useSSL: true, userName: MQTT_CONFIG.user, password: MQTT_CONFIG.pass,
                 onSuccess: () => {
-                    document.getElementById('status').innerText = "● CLOUD ONLINE";
-                    document.getElementById('status').style.color = "#2ecc71";
+                    updateStatus("● CLOUD ACTIVE", "status-online");
                     client.subscribe("cas_system/status/#");
                 },
-                onFailure: (e) => {
-                    document.getElementById('status').innerText = "Errore Connessione";
-                    setTimeout(connectMQTT, 5000);
-                }
+                onFailure: () => { updateStatus("ERRORE CLOUD", "status-offline"); setTimeout(connectMQTT, 5000); }
             });
+        }
+
+        function updateStatus(txt, cls) {
+            const el = document.getElementById('status-bar');
+            el.innerText = txt;
+            el.className = cls;
         }
 
         function renderList() {
             const listDiv = document.getElementById('device-list');
-            listDiv.innerHTML = "";
             const now = Date.now();
+            
+            // Ordiniamo per nome
+            const sortedMacs = Object.keys(devices).sort((a, b) => 
+                devices[a].data.dev.localeCompare(devices[b].data.dev));
 
-            Object.keys(devices).sort().forEach(mac => {
+            let html = "";
+            sortedMacs.forEach(mac => {
                 const d = devices[mac].data;
-                const isOffline = (now - devices[mac].lastSeen) > 25000;
+                const diffSec = Math.floor((now - devices[mac].lastSeen) / 1000);
+                const isOffline = diffSec > 30; // Considerato offline dopo 30 secondi
                 
-                const card = document.createElement('div');
-                card.className = `dev-card ${isOffline ? 'offline' : ''}`;
-                card.onclick = () => openModal(mac);
-                
-                card.innerHTML = `
-                    <div>
-                        <strong>${d.dev.toUpperCase()}</strong><br>
-                        <small>${mac}</small>
-                    </div>
-                    <div class="data-right">
-                        <div class="money">${d.money.toFixed(2)}€</div>
-                        <small>${Math.round(d.sec)}s</small>
+                let timeStatus = isOffline ? 
+                    `<span class="time-badge" style="color:#ef4444">Offline da ${formatTime(diffSec)}</span>` : 
+                    `<span class="time-badge" style="color:#10b981">In linea ora</span>`;
+
+                html += `
+                    <div class="dev-card ${isOffline ? 'offline' : ''}" onclick="openModal('${mac}')">
+                        <div class="info-left">
+                            <h3>${d.dev.toUpperCase()}</h3>
+                            <small>${mac}</small><br>
+                            ${timeStatus}
+                        </div>
+                        <div class="data-right">
+                            <div class="money">${d.money.toFixed(2)}€</div>
+                            <div class="timer-active">${Math.round(d.sec)}s residui</div>
+                        </div>
                     </div>
                 `;
-                listDiv.appendChild(card);
             });
+            listDiv.innerHTML = html;
+        }
+
+        function formatTime(s) {
+            if (s < 60) return s + "s";
+            if (s < 3600) return Math.floor(s/60) + "m";
+            return Math.floor(s/3600) + "h";
         }
 
         function openModal(mac) {
             currentMac = mac;
             const d = devices[mac].data;
             document.getElementById('m-name').innerText = d.dev;
-            document.getElementById('m-mac').innerText = mac;
-            document.getElementById('m-ssid').innerText = d.wifi_ssid || "-";
-            document.getElementById('m-pass').innerText = d.wifi_pass || "-";
+            document.getElementById('m-mac').innerText = "MAC: " + mac;
+            document.getElementById('m-ssid').innerText = d.wifi_ssid || "N/A";
+            document.getElementById('m-pass').innerText = d.wifi_pass || "N/A";
             document.getElementById('in-sec').value = d.sec_p;
             document.getElementById('in-min').value = d.min_i;
             document.getElementById('in-val').value = d.c_val;
@@ -171,7 +222,12 @@
             message.destinationName = `cas_system/cmd/${currentMac}`;
             message.retained = retain;
             client.send(message);
-            if (!retain) alert("Comando inviato!");
+            if (!retain) {
+                const btn = event.target;
+                const oldTxt = btn.innerText;
+                btn.innerText = "INVIATO!";
+                setTimeout(() => btn.innerText = oldTxt, 1000);
+            }
         }
 
         function saveConfig() {
@@ -181,18 +237,19 @@
                 c_val: parseFloat(document.getElementById('in-val').value)
             };
             sendCmd(config, true);
+            alert("Configurazione salvata nel Cloud");
             closeModal();
         }
 
         function resetMoney() {
-            if(confirm("Azzerare incasso modulo?")) {
+            if(confirm("Questa azione azzererà i soldi accumulati su questo dispositivo. Continuare?")) {
                 sendCmd("RESET_TOTAL", true);
                 closeModal();
             }
         }
 
         connectMQTT();
-        setInterval(renderList, 10000); // Refresh ogni 10s
+        setInterval(renderList, 1000); // Aggiorna i timer ogni secondo
     </script>
 </body>
 </html>
