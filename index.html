@@ -3,138 +3,136 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>C.A.S. SYSTEM PRO | Login</title>
+    <title>C.A.S. SYSTEM | I Miei Dispositivi</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mqtt/4.3.7/mqtt.min.js"></script>
     <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #0f172a;
-            color: white;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-        }
-        .login-card {
-            background-color: #1e293b;
-            padding: 40px;
-            border-radius: 16px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
-            text-align: center;
-            width: 100%;
-            max-width: 400px;
-        }
-        h1 { color: #3b82f6; margin-bottom: 24px; }
-        input {
-            width: 80%;
-            padding: 12px;
-            margin-bottom: 20px;
-            border-radius: 8px;
-            border: 1px solid #334155;
-            background-color: #0f172a;
-            color: white;
-            font-size: 18px;
-            text-align: center;
-        }
-        button {
-            background-color: #3b82f6;
-            color: white;
-            border: none;
-            padding: 12px 30px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: bold;
-            font-size: 16px;
-            transition: background 0.3s;
-        }
-        button:hover { background-color: #2563eb; }
-        .footer { margin-top: 20px; font-size: 12px; color: #64748b; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0f172a; color: white; margin: 0; padding: 20px; }
+        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #334155; padding-bottom: 10px; }
+        .user-info { font-size: 14px; color: #94a3b8; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 15px; }
+        .card { background: #1e293b; border-radius: 12px; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.2); position: relative; }
+        .status-dot { height: 10px; width: 10px; border-radius: 50%; display: inline-block; margin-right: 5px; }
+        .online { background: #10b981; box-shadow: 0 0 8px #10b981; }
+        .offline { background: #ef4444; }
+        .mac-label { font-size: 12px; color: #64748b; font-family: monospace; }
+        .money { font-size: 24px; font-weight: bold; margin: 10px 0; color: #3b82f6; }
+        .controls { display: flex; gap: 10px; margin-top: 15px; }
+        button { flex: 1; padding: 10px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .btn-reset { background: #334155; color: white; }
+        .btn-open { background: #3b82f6; color: white; }
+        button:active { transform: scale(0.95); }
+        .logout-btn { background: #ef4444; padding: 5px 12px; font-size: 12px; }
     </style>
 </head>
 <body>
 
-    <div class="login-card">
-        <h1>C.A.S. SYSTEM</h1>
-        <p>Inserisci il tuo PIN di accesso</p>
-        <input type="password" id="pinInput" placeholder="PIN" maxlength="8">
-        <br>
-        <button onclick="verificaPin()">ACCEDI</button>
-        <div class="footer">Sistema di Gestione Cloud Pro © 2026</div>
+<header>
+    <div>
+        <h2 id="welcomeMsg">I Miei Dispositivi</h2>
+        <div class="user-info" id="userInfo">Caricamento sessione...</div>
     </div>
+    <button class="logout-btn" onclick="logout()">LOGOUT</button>
+</header>
 
-    <script>
-        async function verificaPin() {
-            const pinInserito = document.getElementById("pinInput").value;
-            const btn = document.querySelector("button");
+<div class="grid" id="deviceGrid">
+    <!-- I dispositivi appariranno qui -->
+</div>
 
-            if (!pinInserito) {
-                alert("Per favore, inserisci un PIN.");
-                return;
-            }
+<script>
+    // 1. Recupero dati sessione dal login
+    const sessione = JSON.parse(localStorage.getItem("sessione_cas"));
+    if (!sessione) {
+        window.location.href = "index.html";
+    }
 
-            btn.disabled = true;
-            btn.innerText = "Verifica...";
+    document.getElementById("welcomeMsg").innerText = "Ciao, " + sessione.nome;
+    document.getElementById("userInfo").innerText = "PIN: " + sessione.pin + " | Scadenza: " + sessione.scadenza;
 
-            try {
-                // Fetch del database con parametro anti-cache (?t=...)
-                const timestamp = new Date().getTime();
-                const response = await fetch(`database_clienti.json?t=${timestamp}`);
-                
-                if (!response.ok) {
-                    throw new Error("Impossibile caricare il database clienti.");
-                }
+    const dispositiviUtente = sessione.mac; // Lista dei MAC del cliente
+    const cacheDispositivi = {}; // Qui salviamo i dati ricevuti da MQTT
 
-                const database = await response.json();
+    // 2. Configurazione MQTT (HiveMQ Cloud)
+    const options = {
+        connectTimeout: 4000,
+        clientId: 'web_client_' + Math.random().toString(16).substr(2, 8),
+        username: 'admin_cas_system',
+        password: 'CAS_gate_2026!#',
+        protocol: 'wss'
+    };
 
-                // Controllo se il PIN esiste nel database
-                if (database[pinInserito]) {
-                    const cliente = database[pinInserito];
+    const client = mqtt.connect('wss://4c3d155d119d45b48f9a1d88d1963d9a.s1.eu.hivemq.cloud:8884/mqtt', options);
 
-                    // 1. Controllo Scadenza
-                    const oggi = new Date();
-                    const dataScadenza = new Date(cliente.scadenza);
-
-                    if (dataScadenza < oggi) {
-                        alert(`Accesso Negato: La licenza per "${cliente.nome}" è scaduta il ${cliente.scadenza}. Contatta l'amministratore.`);
-                        btn.disabled = false;
-                        btn.innerText = "ACCEDI";
-                        return;
-                    }
-
-                    // 2. Login effettuato con successo
-                    console.log("Accesso autorizzato per:", cliente.nome);
-                    
-                    // Salviamo i dati del cliente per la pagina successiva
-                    localStorage.setItem("clienteLoggato", JSON.stringify({
-                        pin: pinInserito,
-                        nome: cliente.nome,
-                        mac: cliente.mac,
-                        ruolo: cliente.ruolo
-                    }));
-
-                    // Indirizza alla dashboard (modifica il nome file se necessario)
-                    window.location.href = "dashboard.html";
-
-                } else {
-                    alert("PIN ERRATO: Credenziali non trovate nel sistema.");
-                    btn.disabled = false;
-                    btn.innerText = "ACCEDI";
-                }
-
-            } catch (error) {
-                console.error("Errore critico:", error);
-                alert("Errore di sistema: Assicurati che il file database_clienti.json sia presente su GitHub.");
-                btn.disabled = false;
-                btn.innerText = "ACCEDI";
-            }
-        }
-
-        // Permette l'invio con il tasto Invio sulla tastiera
-        document.getElementById("pinInput").addEventListener("keypress", function(event) {
-            if (event.key === "Enter") {
-                verificaPin();
-            }
+    client.on('connect', () => {
+        console.log("Connesso al Cloud!");
+        // Si iscrive solo ai canali dei suoi dispositivi
+        dispositiviUtente.forEach(mac => {
+            client.subscribe(`cas_system/status/${mac.toUpperCase()}`);
         });
-    </script>
+    });
+
+    client.on('message', (topic, message) => {
+        try {
+            const data = JSON.parse(message.toString());
+            cacheDispositivi[data.mac] = { ...data, lastSeen: Date.now() };
+            renderDevices();
+        } catch (e) { console.error("Errore dati:", e); }
+    });
+
+    // 3. Rendering della lista dispositivi
+    function renderDevices() {
+        const grid = document.getElementById("deviceGrid");
+        grid.innerHTML = "";
+
+        dispositiviUtente.forEach(mac => {
+            const macUpper = mac.toUpperCase().trim();
+            const info = cacheDispositivi[macUpper];
+            const isOnline = info && (Date.now() - info.lastSeen < 30000); // Online se visto negli ultimi 30s
+
+            const card = document.createElement("div");
+            card.className = "card";
+            card.innerHTML = `
+                <div>
+                    <span class="status-dot ${isOnline ? 'online' : 'offline'}"></span>
+                    <span style="font-weight:bold">${isOnline ? 'ATTIVO' : 'DISCONNESSO'}</span>
+                </div>
+                <div class="mac-label">${macUpper}</div>
+                <div class="money">${info ? info.money.toFixed(2) : "0.00"}€</div>
+                <div style="font-size: 12px; color: #94a3b8">Segnale: ${info ? info.rssi : "--"} dBm</div>
+                
+                <div class="controls">
+                    <button class="btn-reset" onclick="resetMoney('${macUpper}')">AZZERA</button>
+                    <button class="btn-open" onclick="openGate('${macUpper}')">APRI PORTA</button>
+                </div>
+            `;
+            grid.appendChild(card);
+        });
+    }
+
+    // 4. Funzioni di comando
+    function openGate(mac) {
+        if(confirm("Vuoi aprire la porta del dispositivo " + mac + "?")) {
+            client.publish(`cas_system/cmd/${mac}`, JSON.stringify({ action: "open" }));
+            alert("Comando inviato!");
+        }
+    }
+
+    function resetMoney(mac) {
+        if(confirm("Vuoi azzerare l'incasso di questo dispositivo?")) {
+            client.publish(`cas_system/cmd/${mac}`, JSON.stringify({ action: "reset" }));
+        }
+    }
+
+    function logout() {
+        localStorage.clear();
+        window.location.href = "index.html";
+    }
+
+    // Inizializza la griglia vuota (mostra i dispositivi anche se offline)
+    renderDevices();
+    // Aggiorna lo stato online/offline ogni 10 secondi
+    setInterval(renderDevices, 10000);
+
+</script>
+
 </body>
 </html>
