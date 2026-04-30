@@ -2,266 +2,139 @@
 <html lang="it">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>C.A.S. PRO CONTROL</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>C.A.S. SYSTEM PRO | Login</title>
     <style>
-        :root { 
-            --bg: #0f172a; --card: #1e293b; --accent: #3b82f6; 
-            --green: #10b981; --red: #ef4444; --yellow: #f59e0b; --text: #f8fafc; 
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #0f172a;
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
         }
-        body { font-family: -apple-system, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 0; }
-
-        /* --- SCHERMATA LOGIN --- */
-        #login-screen {
-            position: fixed; inset: 0; background: var(--bg); z-index: 9999;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
+        .login-card {
+            background-color: #1e293b;
+            padding: 40px;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            text-align: center;
+            width: 100%;
+            max-width: 400px;
         }
-        .pin-display { font-size: 40px; letter-spacing: 15px; margin-bottom: 30px; color: var(--accent); height: 50px; }
-        .keypad { display: grid; grid-template-columns: repeat(3, 85px); gap: 15px; }
-        .key { 
-            width: 85px; height: 85px; border-radius: 50%; background: var(--card);
-            display: flex; align-items: center; justify-content: center; font-size: 26px; font-weight: bold;
-            border: 1px solid rgba(255,255,255,0.1); cursor: pointer;
+        h1 { color: #3b82f6; margin-bottom: 24px; }
+        input {
+            width: 80%;
+            padding: 12px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            border: 1px solid #334155;
+            background-color: #0f172a;
+            color: white;
+            font-size: 18px;
+            text-align: center;
         }
-        .key:active { background: var(--accent); scale: 0.95; }
-
-        /* --- DASHBOARD --- */
-        #main-app { display: none; padding: 20px; }
-        .header { text-align: center; margin-bottom: 25px; padding-top: 10px; }
-        .user-badge { background: var(--accent); padding: 6px 16px; border-radius: 20px; font-size: 11px; font-weight: 900; text-transform: uppercase; }
-        
-        .dev-card { 
-            background: var(--card); border-radius: 25px; padding: 20px; margin-bottom: 15px;
-            display: flex; justify-content: space-between; align-items: center;
-            border-left: 6px solid var(--accent); transition: 0.3s;
+        button {
+            background-color: #3b82f6;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 16px;
+            transition: background 0.3s;
         }
-        .offline { opacity: 0.5; border-left-color: #64748b; }
-        .money { font-size: 26px; font-weight: 800; color: var(--green); }
-
-        /* --- MODALE --- */
-        .overlay { 
-            display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); 
-            z-index: 1000; align-items: center; justify-content: center; backdrop-filter: blur(10px);
-        }
-        .modal { background: var(--card); width: 90%; max-width: 400px; border-radius: 30px; padding: 25px; position: relative; }
-        .btn-close { position: absolute; top: 15px; right: 15px; background: #334155; color: white; border-radius: 50%; width: 35px; height: 35px; border:none; }
-        
-        h3 { margin: 0 0 5px 0; color: var(--accent); }
-        .mac-label { font-size: 10px; opacity: 0.5; font-family: monospace; }
-        
-        .info-box { background: rgba(255,255,255,0.05); padding: 12px; border-radius: 15px; margin: 15px 0; font-size: 13px; border: 1px solid rgba(255,255,255,0.1); }
-        
-        button { border: none; font-weight: bold; border-radius: 15px; padding: 16px; cursor: pointer; width: 100%; margin: 8px 0; font-size: 15px; }
-        .btn-start { background: var(--green); color: #000; }
-        .btn-stop { background: var(--red); color: #fff; }
-        .btn-save { background: var(--accent); color: #fff; margin-top: 15px; }
-        
-        input { width: 100%; padding: 12px; margin: 5px 0; border-radius: 10px; background:#0f172a; color:white; border:1px solid #334155; box-sizing:border-box; }
-        label { font-size: 11px; color: var(--accent); font-weight: bold; margin-left: 5px; }
-
-        .admin-only { display: none; margin-top: 15px; border-top: 1px solid #334155; pt-15px; }
+        button:hover { background-color: #2563eb; }
+        .footer { margin-top: 20px; font-size: 12px; color: #64748b; }
     </style>
 </head>
 <body>
 
-    <!-- LOGIN -->
-    <div id="login-screen">
-        <h2 style="color: var(--accent); letter-spacing: 2px;">C.A.S. PRO</h2>
-        <div class="pin-display" id="pin-dots"></div>
-        <div class="keypad">
-            <div class="key" onclick="pressKey('1')">1</div><div class="key" onclick="pressKey('2')">2</div><div class="key" onclick="pressKey('3')">3</div>
-            <div class="key" onclick="pressKey('4')">4</div><div class="key" onclick="pressKey('5')">5</div><div class="key" onclick="pressKey('6')">6</div>
-            <div class="key" onclick="pressKey('7')">7</div><div class="key" onclick="pressKey('8')">8</div><div class="key" onclick="pressKey('9')">9</div>
-            <div class="key" style="opacity:0"></div><div class="key" onclick="pressKey('0')">0</div>
-            <div class="key" onclick="pressKey('C')" style="color:var(--red)">✕</div>
-        </div>
-    </div>
-
-    <!-- MAIN APP -->
-    <div id="main-app">
-        <div class="header">
-            <span class="user-badge" id="user-display">-</span>
-            <div id="mqtt-status" style="font-size: 9px; color: var(--yellow); margin-top: 8px;">CONNETTENDO AL CLOUD...</div>
-        </div>
-        <div id="device-list"></div>
-    </div>
-
-    <!-- MODALE CONTROLLO -->
-    <div id="overlay" class="overlay">
-        <div class="modal">
-            <button class="btn-close" onclick="closeModal()">✕</button>
-            <h3 id="m-name">Modulo</h3>
-            <div class="mac-label" id="m-mac">MAC: --:--:--</div>
-
-            <div class="info-box">
-                <div>📡 WiFi: <span id="m-ssid" style="color:var(--yellow)">-</span></div>
-                <div>📶 Segnale: <span id="m-rssi">-</span> dBm</div>
-                <div>💶 Totale Incasso: <span id="m-total" style="color:var(--green); font-weight:bold;">-</span></div>
-            </div>
-
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                <button class="btn-start" onclick="sendCmd('REMOTE_START')">▶ START</button>
-                <button class="btn-stop" onclick="if(confirm('Azzero il tempo?')) sendCmd('REMOTE_STOP')">🛑 STOP</button>
-            </div>
-
-            <!-- SEZIONE CONFIGURAZIONE (VISIBILE SIA A ADMIN CHE CLIENTE AUTORIZZATO) -->
-            <div id="config-fields">
-                <hr style="border:0; border-top:1px solid #334155; margin: 15px 0;">
-                <label>NOME POSIZIONE</label>
-                <input type="text" id="in-name">
-                <label>SECONDI PER IMPULSO</label>
-                <input type="number" id="in-sec">
-                <label>VALORE MONETA (€)</label>
-                <input type="number" step="0.1" id="in-val">
-                <button class="btn-save" onclick="saveConfig()">AGGIORNA MODULO</button>
-            </div>
-            
-            <!-- SOLO ADMIN PUÒ AZZERARE SOLDI O VEDERE PASS WIFI -->
-            <div id="admin-tools" class="admin-only">
-                <button style="background:#e67e22; color:white; font-size:12px" onclick="resetMoney()">AZZERA TOTALIZZATORE €</button>
-            </div>
-        </div>
+    <div class="login-card">
+        <h1>C.A.S. SYSTEM</h1>
+        <p>Inserisci il tuo PIN di accesso</p>
+        <input type="password" id="pinInput" placeholder="PIN" maxlength="8">
+        <br>
+        <button onclick="verificaPin()">ACCEDI</button>
+        <div class="footer">Sistema di Gestione Cloud Pro © 2026</div>
     </div>
 
     <script>
-        // DATABASE SINCRONIZZATO CON APP PYTHON
-        const DATABASE = {
-            "9999": { nome: "ADMIN", ruolo: "admin", mac: [] },
-            "1234": { nome: "BAR CENTRALE", ruolo: "cliente", mac: ["A1:B2:C3:D4:E5:F6"], scadenza: "2026-12-31" },
-            // Aggiungi qui gli altri PIN che crei su Python
-        };
+        async function verificaPin() {
+            const pinInserito = document.getElementById("pinInput").value;
+            const btn = document.querySelector("button");
 
-        let currentPin = "";
-        let currentUser = null;
-        let devices = {};
-        let activeMac = "";
+            if (!pinInserito) {
+                alert("Per favore, inserisci un PIN.");
+                return;
+            }
 
-        const client = new Paho.MQTT.Client("4c3d155d119d45b48f9a1d88d1963d9a.s1.eu.hivemq.cloud", 8884, "iphone_" + Math.random().toString(16).substr(2, 5));
+            btn.disabled = true;
+            btn.innerText = "Verifica...";
 
-        function pressKey(num) {
-            if (num === 'C') currentPin = "";
-            else currentPin += num;
-            document.getElementById('pin-dots').innerText = "•".repeat(currentPin.length);
-            if (currentPin.length === 4) checkLogin();
-        }
-
-        function checkLogin() {
-            const user = DATABASE[currentPin];
-            if (user) {
-                const today = new Date().toISOString().split('T')[0];
-                if (user.ruolo === "cliente" && user.scadenza < today) {
-                    alert("ABBONAMENTO SCADUTO");
-                    resetLogin(); return;
+            try {
+                // Fetch del database con parametro anti-cache (?t=...)
+                const timestamp = new Date().getTime();
+                const response = await fetch(`database_clienti.json?t=${timestamp}`);
+                
+                if (!response.ok) {
+                    throw new Error("Impossibile caricare il database clienti.");
                 }
-                currentUser = user;
-                document.getElementById('login-screen').style.display = "none";
-                document.getElementById('main-app').style.display = "block";
-                document.getElementById('user-display').innerText = user.nome;
-                connect();
-            } else {
-                alert("PIN ERRATO");
-                resetLogin();
-            }
-        }
 
-        function resetLogin() { currentPin = ""; document.getElementById('pin-dots').innerText = ""; }
+                const database = await response.json();
 
-        function connect() {
-            client.connect({
-                useSSL: true, userName: "admin_cas_system", password: "CAS_gate_2026!#",
-                onSuccess: () => {
-                    document.getElementById('mqtt-status').innerText = "● CLOUD ONLINE";
-                    document.getElementById('mqtt-status').style.color = "#10b981";
-                    client.subscribe("cas_system/status/#");
+                // Controllo se il PIN esiste nel database
+                if (database[pinInserito]) {
+                    const cliente = database[pinInserito];
+
+                    // 1. Controllo Scadenza
+                    const oggi = new Date();
+                    const dataScadenza = new Date(cliente.scadenza);
+
+                    if (dataScadenza < oggi) {
+                        alert(`Accesso Negato: La licenza per "${cliente.nome}" è scaduta il ${cliente.scadenza}. Contatta l'amministratore.`);
+                        btn.disabled = false;
+                        btn.innerText = "ACCEDI";
+                        return;
+                    }
+
+                    // 2. Login effettuato con successo
+                    console.log("Accesso autorizzato per:", cliente.nome);
+                    
+                    // Salviamo i dati del cliente per la pagina successiva
+                    localStorage.setItem("clienteLoggato", JSON.stringify({
+                        pin: pinInserito,
+                        nome: cliente.nome,
+                        mac: cliente.mac,
+                        ruolo: cliente.ruolo
+                    }));
+
+                    // Indirizza alla dashboard (modifica il nome file se necessario)
+                    window.location.href = "dashboard.html";
+
+                } else {
+                    alert("PIN ERRATO: Credenziali non trovate nel sistema.");
+                    btn.disabled = false;
+                    btn.innerText = "ACCEDI";
                 }
-            });
-        }
 
-        client.onMessageArrived = (msg) => {
-            const data = JSON.parse(msg.payloadString);
-            // Filtro: se non sono admin e il mac non è mio, ignoro
-            if (currentUser.ruolo !== "admin" && !currentUser.mac.includes(data.mac)) return;
-            
-            devices[data.mac] = { data: data, lastSeen: Date.now() };
-            render();
-        };
-
-        function render() {
-            const list = document.getElementById('device-list');
-            let html = "";
-            Object.keys(devices).forEach(mac => {
-                const d = devices[mac].data;
-                const isOff = (Date.now() - devices[mac].lastSeen) > 25000;
-                html += `
-                    <div class="dev-card ${isOff ? 'offline' : ''}" onclick="openModal('${mac}')">
-                        <div>
-                            <strong>${d.dev.toUpperCase()}</strong><br>
-                            <small>${isOff ? 'SCOLLEGATO' : 'CONNESSO'}</small>
-                        </div>
-                        <div style="text-align:right">
-                            <div class="money">${d.money.toFixed(2)}€</div>
-                            <div style="font-size:12px; color:var(--accent)">${Math.round(d.sec)}s Rimanenti</div>
-                        </div>
-                    </div>
-                `;
-            });
-            list.innerHTML = html;
-        }
-
-        function openModal(mac) {
-            activeMac = mac;
-            const d = devices[mac].data;
-            document.getElementById('m-name').innerText = d.dev;
-            document.getElementById('m-mac').innerText = "MAC: " + mac;
-            document.getElementById('m-ssid').innerText = d.wifi_ssid || "N/D";
-            document.getElementById('m-rssi').innerText = d.rssi || "0";
-            document.getElementById('m-total').innerText = d.money.toFixed(2) + " €";
-            
-            // Pre-compila campi config
-            document.getElementById('in-name').value = d.dev;
-            document.getElementById('in-sec').value = d.sec_p;
-            document.getElementById('in-val').value = d.c_val;
-
-            if(currentUser.ruolo === "admin") {
-                document.getElementById('admin-tools').style.display = "block";
-            }
-
-            document.getElementById('overlay').style.display = "flex";
-        }
-
-        function closeModal() { document.getElementById('overlay').style.display = "none"; }
-
-        function sendCmd(cmd) {
-            const m = new Paho.MQTT.Message(JSON.stringify({cmd: cmd}));
-            m.destinationName = "cas_system/cmd/" + activeMac;
-            client.send(m);
-            if(cmd.includes("REMOTE")) closeModal();
-        }
-
-        function saveConfig() {
-            const payload = {
-                dev: document.getElementById('in-name').value,
-                sec_p: parseInt(document.getElementById('in-sec').value),
-                c_val: parseFloat(document.getElementById('in-val').value)
-            };
-            const m = new Paho.MQTT.Message(JSON.stringify(payload));
-            m.destinationName = "cas_system/cmd/" + activeMac;
-            m.retained = true;
-            client.send(m);
-            alert("Configurazione Inviata!");
-            closeModal();
-        }
-
-        function resetMoney() {
-            if(confirm("Vuoi azzerare l'incasso di questo modulo?")) {
-                const m = new Paho.MQTT.Message(JSON.stringify({cmd: "RESET_TOTAL"}));
-                m.destinationName = "cas_system/cmd/" + activeMac;
-                m.retained = true;
-                client.send(m);
-                closeModal();
+            } catch (error) {
+                console.error("Errore critico:", error);
+                alert("Errore di sistema: Assicurati che il file database_clienti.json sia presente su GitHub.");
+                btn.disabled = false;
+                btn.innerText = "ACCEDI";
             }
         }
+
+        // Permette l'invio con il tasto Invio sulla tastiera
+        document.getElementById("pinInput").addEventListener("keypress", function(event) {
+            if (event.key === "Enter") {
+                verificaPin();
+            }
+        });
     </script>
 </body>
 </html>
