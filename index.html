@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>C.A.S. ADMIN PANEL</title>
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <title>C.A.S. CLOUD GATE</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
     <style>
         :root { 
@@ -11,196 +12,226 @@
             --green: #10b981; --red: #ef4444; --yellow: #f59e0b; --text: #f8fafc; 
         }
         
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: env(safe-area-inset-top) 15px 20px 15px; }
+        body { font-family: -apple-system, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 0; overflow-x: hidden; }
+
+        /* --- SCHERMATA LOGIN --- */
+        #login-screen {
+            position: fixed; inset: 0; background: var(--bg); z-index: 9999;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+        }
+        .pin-display { font-size: 40px; letter-spacing: 15px; margin-bottom: 30px; color: var(--accent); height: 50px; }
+        .keypad { display: grid; grid-template-columns: repeat(3, 80px); gap: 15px; }
+        .key { 
+            width: 80px; height: 80px; border-radius: 50%; background: var(--card);
+            display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: bold;
+            border: 1px solid rgba(255,255,255,0.1); cursor: pointer;
+        }
+        .key:active { background: var(--accent); }
+
+        /* --- DASHBOARD --- */
+        #main-app { display: none; padding: 20px; }
+        .header { text-align: center; padding: 20px 0; border-bottom: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px; }
+        .user-badge { font-size: 12px; background: var(--accent); padding: 4px 12px; border-radius: 20px; text-transform: uppercase; }
         
-        /* Header */
-        .header { text-align: center; padding: 20px 0; }
-        .header h2 { margin: 0; font-size: 22px; letter-spacing: 1px; color: var(--accent); }
-        #status-bar { font-size: 11px; font-weight: bold; margin-top: 5px; padding: 4px 12px; border-radius: 20px; display: inline-block; background: #334155; }
-        .status-online { color: var(--green); }
-        .status-offline { color: var(--red); }
-
-        /* Griglia Dispositivi */
-        #device-list { display: grid; gap: 15px; margin-top: 10px; }
-
         .dev-card { 
-            background: var(--card); border-radius: 20px; padding: 20px;
+            background: var(--card); border-radius: 20px; padding: 20px; margin-bottom: 15px;
             display: flex; justify-content: space-between; align-items: center;
-            border: 1px solid rgba(255,255,255,0.05); transition: 0.3s;
-            position: relative; overflow: hidden;
+            border-left: 6px solid var(--accent); position: relative;
         }
+        .offline { opacity: 0.6; filter: grayscale(1); }
+        .offline { border-left-color: #64748b; }
         
-        /* Indicatore Online/Offline laterale */
-        .dev-card::before {
-            content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 6px; background: var(--accent);
-        }
+        .money { font-size: 24px; font-weight: 800; color: var(--green); }
+        .time-status { font-size: 11px; margin-top: 5px; display: block; }
 
-        .offline { opacity: 0.8; filter: grayscale(0.5); }
-        .offline::before { background: #64748b !important; }
-        
-        .info-left h3 { margin: 0; font-size: 18px; color: var(--text); }
-        .info-left small { font-family: monospace; color: #94a3b8; font-size: 11px; }
-        .time-badge { font-size: 10px; padding: 2px 6px; border-radius: 4px; background: rgba(0,0,0,0.3); margin-top: 5px; display: inline-block; }
-
-        .data-right { text-align: right; }
-        .money { font-size: 22px; font-weight: 800; color: var(--green); }
-        .timer-active { color: var(--yellow); font-weight: bold; font-size: 14px; }
-
-        /* Modale */
+        /* --- MODALE --- */
         .overlay { 
-            display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); 
+            display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); 
             z-index: 1000; align-items: center; justify-content: center; backdrop-filter: blur(10px);
         }
-        .modal { 
-            background: var(--card); width: 92%; max-height: 85vh; border-radius: 30px;
-            padding: 25px; box-sizing: border-box; overflow-y: auto; position: relative;
-            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
-        }
-
-        .wifi-box { background: rgba(59, 130, 246, 0.1); border: 1px solid var(--accent); border-radius: 15px; padding: 15px; margin: 15px 0; text-align: left; }
-        .wifi-box code { color: var(--accent); font-weight: bold; }
-
+        .modal { background: var(--card); width: 90%; border-radius: 30px; padding: 25px; position: relative; }
+        .wifi-box { background: rgba(59, 130, 246, 0.1); border: 1px solid var(--accent); border-radius: 15px; padding: 15px; margin: 15px 0; }
+        
         .btn-group { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 15px 0; }
+        button { border: none; font-weight: bold; border-radius: 15px; padding: 15px; cursor: pointer; }
+        .btn-start { background: var(--green); color: #000; }
+        .btn-stop { background: var(--red); color: white; }
+        .btn-save { background: var(--accent); color: white; width: 100%; }
+        .btn-close { position: absolute; top: 15px; right: 15px; background: #334155; color: white; border-radius: 50%; width: 35px; height: 35px; }
         
-        label { display: block; text-align: left; font-size: 11px; text-transform: uppercase; color: #94a3b8; margin-bottom: 5px; margin-top: 15px; }
-        input { width: 100%; padding: 14px; border-radius: 12px; border: 1px solid #334155; background: #0f172a; color: white; font-size: 16px; box-sizing: border-box; }
-        
-        button { border: none; font-weight: bold; border-radius: 15px; cursor: pointer; transition: active 0.1s; }
-        button:active { transform: scale(0.97); }
-        
-        .btn-start { background: var(--green); color: #064e3b; padding: 18px; }
-        .btn-stop { background: var(--red); color: white; padding: 18px; }
-        .btn-save { background: var(--accent); color: white; padding: 15px; width: 100%; margin-top: 10px; }
-        .btn-reset { background: #475569; color: #cbd5e1; padding: 10px; font-size: 12px; margin-top: 20px; }
-        .btn-close { position: absolute; top: 15px; right: 15px; background: #334155; color: white; width: 30px; height: 30px; border-radius: 50%; font-size: 12px; }
-
+        .admin-only { display: none; } /* Nascosto di default */
     </style>
 </head>
 <body>
 
-    <div class="header">
-        <h2>C.A.S. SYSTEM 2026</h2>
-        <div id="status-bar">CONNESSIONE...</div>
+    <!-- SCHERMATA LOGIN -->
+    <div id="login-screen">
+        <h2 style="color: var(--accent)">C.A.S. SYSTEM</h2>
+        <p style="font-size: 12px; color: #64748b">Inserisci il tuo PIN Personale</p>
+        <div class="pin-display" id="pin-dots"></div>
+        <div class="keypad">
+            <div class="key" onclick="pressKey('1')">1</div><div class="key" onclick="pressKey('2')">2</div><div class="key" onclick="pressKey('3')">3</div>
+            <div class="key" onclick="pressKey('4')">4</div><div class="key" onclick="pressKey('5')">5</div><div class="key" onclick="pressKey('6')">6</div>
+            <div class="key" onclick="pressKey('7')">7</div><div class="key" onclick="pressKey('8')">8</div><div class="key" onclick="pressKey('9')">9</div>
+            <div class="key" style="background: transparent"></div><div class="key" onclick="pressKey('0')">0</div>
+            <div class="key" onclick="pressKey('C')" style="color: var(--red)">✕</div>
+        </div>
     </div>
 
-    <div id="device-list">
-        <!-- I dispositivi appariranno qui -->
+    <!-- APP PRINCIPALE -->
+    <div id="main-app">
+        <div class="header">
+            <span class="user-badge" id="user-name">Guest</span>
+            <h2 id="app-title" style="margin: 10px 0 5px 0; font-size: 20px;">I MIEI MODULI</h2>
+            <div id="mqtt-status" style="font-size: 10px; color: var(--yellow)">CONNETTENDO...</div>
+        </div>
+
+        <div id="device-list"></div>
     </div>
 
-    <!-- Modal Dettagli -->
+    <!-- MODALE DETTAGLI -->
     <div id="overlay" class="overlay">
         <div class="modal">
             <button class="btn-close" onclick="closeModal()">✕</button>
             <h3 id="m-name" style="margin:0">Modulo</h3>
-            <p id="m-mac" style="font-size:11px; opacity:0.5; margin-bottom:20px"></p>
+            <p id="m-mac" class="admin-only" style="font-size:11px; opacity:0.5; margin-bottom:20px"></p>
             
-            <div class="wifi-box">
-                <span style="font-size:12px; display:block; margin-bottom:5px">📡 PARAMETRI RETE:</span>
+            <div class="admin-only wifi-box" id="m-wifi-section">
                 SSID: <code id="m-ssid">-</code><br>
                 PASS: <code id="m-pass">-</code>
             </div>
 
-            <label>Comandi Rapidi</label>
+            <label style="font-size: 11px; color: #94a3b8;">CONTROLLO:</label>
             <div class="btn-group">
-                <button class="btn-start" onclick="sendCmd('REMOTE_START', false)">+ 1 START</button>
-                <button class="btn-stop" onclick="if(confirm('Fermare?')) sendCmd('REMOTE_STOP', false)">STOP</button>
+                <button class="btn-start" onclick="sendCmd('REMOTE_START')">+ START</button>
+                <button class="btn-stop" onclick="if(confirm('Fermare?')) sendCmd('REMOTE_STOP')">STOP</button>
             </div>
 
-            <label>Impostazioni Modulo</label>
-            <input type="number" id="in-sec" placeholder="Secondi x Impulso">
-            <input type="number" id="in-min" placeholder="Impulsi Minimi">
-            <input type="number" id="in-val" step="0.01" placeholder="Valore €">
-
-            <button class="btn-save" onclick="saveConfig()">AGGIORNA CONFIGURAZIONE</button>
-            <button class="btn-reset" onclick="resetMoney()">AZZERA INCASSO TOTALIZZATORE</button>
+            <div class="admin-only">
+                <label style="font-size: 11px; color: #94a3b8;">CONFIGURAZIONE:</label>
+                <input type="number" id="in-sec" placeholder="Sec/Imp" style="width:100%; padding:12px; margin:5px 0; border-radius:10px; background:#0f172a; color:white; border:none; box-sizing:border-box;">
+                <input type="number" id="in-min" placeholder="Min Imp" style="width:100%; padding:12px; margin:5px 0; border-radius:10px; background:#0f172a; color:white; border:none; box-sizing:border-box;">
+                <input type="number" id="in-val" step="0.01" placeholder="Val €" style="width:100%; padding:12px; margin:5px 0; border-radius:10px; background:#0f172a; color:white; border:none; box-sizing:border-box;">
+                <button class="btn-save" onclick="saveConfig()" style="margin-top:10px">SALVA NEL CLOUD</button>
+                <button onclick="resetMoney()" style="width:100%; background:#e67e22; color:white; margin-top:10px; border-radius:15px; padding:10px; border:none;">AZZERA INCASSI</button>
+            </div>
         </div>
     </div>
 
     <script>
+        /* --- DATABASE UTENTI --- */
+        const DATABASE_UTENTI = {
+            "9999": { ruolo: "admin", nome: "PCL GAME ADMIN" },
+            "1234": { 
+                ruolo: "cliente", 
+                nome: "MARIO ROSSI", 
+                scadenza: "2026-12-31", 
+                mac_autorizzati: ["A1:B2:C3:D4:E5:F6"] // Incolla qui il MAC del cliente
+            }
+        };
+
+        let currentUser = null;
+        let currentPin = "";
+        let devices = {};
+        let currentMac = "";
+
         const MQTT_CONFIG = {
             host: "4c3d155d119d45b48f9a1d88d1963d9a.s1.eu.hivemq.cloud",
             port: 8884,
             user: "admin_cas_system",
             pass: "CAS_gate_2026!#",
-            clientId: "admin_web_" + Math.random().toString(16).substr(2, 5)
+            clientId: "cas_web_" + Math.random().toString(16).substr(2, 5)
         };
 
-        let devices = {};
-        let currentMac = "";
-
         const client = new Paho.MQTT.Client(MQTT_CONFIG.host, MQTT_CONFIG.port, MQTT_CONFIG.clientId);
+
+        /* --- GESTIONE PIN --- */
+        function pressKey(num) {
+            if (num === 'C') { currentPin = ""; }
+            else { currentPin += num; }
+            
+            document.getElementById('pin-dots').innerText = "•".repeat(currentPin.length);
+
+            if (currentPin.length === 4) {
+                checkLogin(currentPin);
+            }
+        }
+
+        function checkLogin(pin) {
+            const user = DATABASE_UTENTI[pin];
+            if (user) {
+                // Controllo scadenza per clienti
+                if (user.ruolo === "cliente" && new Date(user.scadenza) < new Date()) {
+                    alert("CANONE SCADUTO. Contatta PCL GAME.");
+                    currentPin = "";
+                    document.getElementById('pin-dots').innerText = "";
+                    return;
+                }
+                
+                currentUser = user;
+                document.getElementById('login-screen').style.display = "none";
+                document.getElementById('main-app').style.display = "block";
+                document.getElementById('user-name').innerText = user.nome;
+                
+                // Se è admin, mostra i tasti segreti
+                if (user.ruolo === "admin") {
+                    document.querySelectorAll('.admin-only').forEach(el => el.style.display = "block");
+                }
+                
+                connectMQTT();
+            } else {
+                alert("PIN ERRATO");
+                currentPin = "";
+                document.getElementById('pin-dots').innerText = "";
+            }
+        }
+
+        /* --- LOGICA MQTT --- */
+        function connectMQTT() {
+            client.connect({
+                useSSL: true, userName: MQTT_CONFIG.user, password: MQTT_CONFIG.pass,
+                onSuccess: () => {
+                    document.getElementById('mqtt-status').innerText = "● CLOUD CONNESSO";
+                    document.getElementById('mqtt-status').style.color = "#10b981";
+                    client.subscribe("cas_system/status/#");
+                }
+            });
+        }
 
         client.onMessageArrived = (message) => {
             try {
                 const data = JSON.parse(message.payloadString);
                 const mac = data.mac;
                 
-                // USIAMO LO STESSO METODO PYTHON:
-                // Se il pacchetto ha un timestamp (ts), usiamo quello, 
-                // altrimenti usiamo il momento dell'arrivo solo se è il primo messaggio.
-                let msgTime = data.ts ? (data.ts * 1000) : Date.now();
-                
-                devices[mac] = { 
-                    data: data, 
-                    lastSeen: msgTime 
-                };
+                // FILTRO: Se cliente, ignora i MAC non autorizzati
+                if (currentUser.ruolo === "cliente") {
+                    if (!currentUser.mac_autorizzati.includes(mac)) return;
+                }
+
+                devices[mac] = { data: data, lastSeen: data.ts ? (data.ts * 1000) : Date.now() };
                 renderList();
-            } catch (e) { console.log("Errore JSON:", e); }
+            } catch (e) {}
         };
-
-        client.onConnectionLost = () => {
-            updateStatus("OFFLINE / RICONNESSIONE", "status-offline");
-            setTimeout(connectMQTT, 3000);
-        };
-
-        function connectMQTT() {
-            client.connect({
-                useSSL: true, userName: MQTT_CONFIG.user, password: MQTT_CONFIG.pass,
-                onSuccess: () => {
-                    updateStatus("● CLOUD ACTIVE", "status-online");
-                    client.subscribe("cas_system/status/#");
-                },
-                onFailure: () => { updateStatus("ERRORE CLOUD", "status-offline"); setTimeout(connectMQTT, 5000); }
-            });
-        }
-
-        function updateStatus(txt, cls) {
-            const el = document.getElementById('status-bar');
-            el.innerText = txt;
-            el.className = cls;
-        }
 
         function renderList() {
             const listDiv = document.getElementById('device-list');
             const now = Date.now();
-            
-            const sortedMacs = Object.keys(devices).sort((a, b) => 
-                devices[a].data.dev.localeCompare(devices[b].data.dev));
-
             let html = "";
-            sortedMacs.forEach(mac => {
+
+            Object.keys(devices).forEach(mac => {
                 const d = devices[mac].data;
-                
-                // CALCOLO DIFFERENZA (Esattamente come in Python)
                 const diffSec = Math.floor((now - devices[mac].lastSeen) / 1000);
-                
-                // Se non riceve dati da più di 25 secondi (come nel tuo Python) è OFFLINE
-                const isOffline = diffSec > 25; 
-                
-                let timeStatus = isOffline ? 
-                    `<span class="time-badge" style="color:#ef4444">Offline da ${formatTime(diffSec)}</span>` : 
-                    `<span class="time-badge" style="color:#10b981">● LIVE ONLINE</span>`;
+                const isOffline = diffSec > 25;
 
                 html += `
                     <div class="dev-card ${isOffline ? 'offline' : ''}" onclick="openModal('${mac}')">
-                        <div class="info-left">
-                            <h3>${d.dev.toUpperCase()}</h3>
-                            <small>${mac}</small><br>
-                            ${timeStatus}
+                        <div>
+                            <strong style="font-size:18px">${d.dev.toUpperCase()}</strong><br>
+                            <span class="time-status">${isOffline ? 'Offline da ' + formatTime(diffSec) : '🟢 ONLINE'}</span>
                         </div>
-                        <div class="data-right">
+                        <div style="text-align:right">
                             <div class="money">${d.money.toFixed(2)}€</div>
-                            <div class="timer-active">${Math.round(d.sec)}s</div>
+                            <small>${Math.round(d.sec)}s residui</small>
                         </div>
                     </div>
                 `;
@@ -211,48 +242,55 @@
         function formatTime(s) {
             if (s < 60) return s + "s";
             if (s < 3600) return Math.floor(s/60) + "m";
-            if (s < 86400) return Math.floor(s/3600) + "h";
-            return Math.floor(s/86400) + "gg";
+            return Math.floor(s/3600) + "h";
         }
 
-        // Funzioni modale rimangono invariate...
         function openModal(mac) {
             currentMac = mac;
             const d = devices[mac].data;
             document.getElementById('m-name').innerText = d.dev;
             document.getElementById('m-mac').innerText = "MAC: " + mac;
-            document.getElementById('m-ssid').innerText = d.wifi_ssid || "N/A";
-            document.getElementById('m-pass').innerText = d.wifi_pass || "N/A";
+            document.getElementById('m-ssid').innerText = d.wifi_ssid || "-";
+            document.getElementById('m-pass').innerText = d.wifi_pass || "-";
             document.getElementById('in-sec').value = d.sec_p;
             document.getElementById('in-min').value = d.min_i;
             document.getElementById('in-val').value = d.c_val;
             document.getElementById('overlay').style.display = "flex";
         }
+
         function closeModal() { document.getElementById('overlay').style.display = "none"; }
-        function sendCmd(payload, retain) {
-            const msgBody = typeof payload === 'object' ? payload : { cmd: payload };
-            const message = new Paho.MQTT.Message(JSON.stringify(msgBody));
-            message.destinationName = `cas_system/cmd/${currentMac}`;
-            message.retained = retain;
-            client.send(message);
+
+        function sendCmd(cmdName) {
+            const msg = new Paho.MQTT.Message(JSON.stringify({ cmd: cmdName }));
+            msg.destinationName = `cas_system/cmd/${currentMac}`;
+            client.send(msg);
         }
+
         function saveConfig() {
-            const config = {
-                dev: document.getElementById('m-name').innerText, // Mantiene il nome attuale
+            const payload = {
+                dev: document.getElementById('m-name').innerText,
                 sec_p: parseInt(document.getElementById('in-sec').value),
                 min_i: parseInt(document.getElementById('in-min').value),
                 c_val: parseFloat(document.getElementById('in-val').value)
             };
-            sendCmd(config, true);
+            const msg = new Paho.MQTT.Message(JSON.stringify(payload));
+            msg.destinationName = `cas_system/cmd/${currentMac}`;
+            msg.retained = true;
+            client.send(msg);
             closeModal();
         }
+
         function resetMoney() {
-            if(confirm("Azzero incasso?")) {
-                sendCmd("RESET_TOTAL", true);
+            if(confirm("Azzerare incasso?")) {
+                const msg = new Paho.MQTT.Message(JSON.stringify({ cmd: "RESET_TOTAL" }));
+                msg.destinationName = `cas_system/cmd/${currentMac}`;
+                msg.retained = true;
+                client.send(msg);
                 closeModal();
             }
         }
 
-        connectMQTT();
-        setInterval(renderList, 1000); 
+        setInterval(renderList, 10000);
     </script>
+</body>
+</html>
