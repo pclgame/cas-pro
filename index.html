@@ -18,9 +18,9 @@
         .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 15px; }
         .device-card { background: var(--card); padding: 20px; border-radius: 15px; text-align: center; position: relative; border: 2px solid var(--border); cursor: pointer; transition: 0.3s; }
         .device-card:hover { border-color: var(--accent); }
-        .status-dot { position: absolute; top: 12px; right: 12px; width: 12px; height: 12px; border-radius: 50%; }
+        .status-dot { position: absolute; top: 12px; right: 12px; width: 12px; height: 12px; border-radius: 50%; transition: background 0.5s, box-shadow 0.5s; }
         .online { background: var(--online); box-shadow: 0 0 8px var(--online); }
-        .offline { background: var(--offline); }
+        .offline { background: var(--offline); box-shadow: none; }
         
         .dev-name-label { font-size: 13px; font-weight: bold; color: #94a3b8; margin-bottom: 8px; display: block; text-transform: uppercase; }
         .money-val { font-size: 24px; font-weight: bold; color: var(--accent); margin: 5px 0; }
@@ -35,7 +35,6 @@
         input { background: #1e293b; border: 1px solid var(--border); color: white; padding: 8px; border-radius: 5px; width: 100px; text-align: right; }
         input.wide { width: 180px; text-align: left; }
         
-        /* Stile indicatore WiFi */
         .wifi-bar-container { display: flex; align-items: center; gap: 4px; }
         .wifi-bar { width: 4px; border-radius: 1px; background: #475569; }
         
@@ -95,6 +94,7 @@
                     <span>Qualità Segnale:</span> 
                     <div id="wifi-indicator" class="wifi-bar-container"></div>
                 </div>
+                <div class="row"><span>Ultimo Segnale:</span> <span id="view-lastseen" style="font-size:12px; opacity:0.6;">--</span></div>
             </div>
 
             <div class="section">
@@ -165,13 +165,24 @@
             });
 
             mqttClient.on('message', (topic, msg) => {
-                const data = JSON.parse(msg.toString());
-                const m = data.mac.toUpperCase();
-                devices[m] = { ...data, lastSeen: Date.now() };
-                renderGrid();
-                if(selectedMac === m) updatePopupData(data);
+                try {
+                    const data = JSON.parse(msg.toString());
+                    const m = data.mac.toUpperCase();
+                    
+                    // Se riceve segnale esplicito di offline (es. Last Will)
+                    if(data.status === "offline") {
+                        if(devices[m]) devices[m].forcedOffline = true;
+                    } else {
+                        devices[m] = { ...data, lastSeen: Date.now(), forcedOffline: false };
+                    }
+                    
+                    renderGrid();
+                    if(selectedMac === m) updatePopupData(devices[m]);
+                } catch(e) { console.error("Errore JSON", e); }
             });
-            renderGrid();
+
+            // Avvia il Watchdog: controlla lo stato ogni 2 secondi
+            setInterval(renderGrid, 2000);
         }
 
         function getWifiIcon(rssi) {
@@ -193,24 +204,29 @@
 
         function renderGrid() {
             const container = document.getElementById("deviceGrid");
+            if (!container) return;
+            
+            // Per evitare sfarfallii, memorizziamo se dobbiamo ricostruire tutto o solo aggiornare
             container.innerHTML = "";
             currentUser.mac.forEach(m => {
                 const mac = m.trim().toUpperCase();
                 const d = devices[mac];
-                const isOnline = d && (Date.now() - d.lastSeen < 20000);
-                const label = (d && d.dev && d.dev !== "") ? d.dev : "MODULO " + mac.slice(-5);
+                
+                // LOGICA ONLINE: deve aver inviato dati negli ultimi 12 secondi e non essere in forcedOffline
+                const isOnline = d && (Date.now() - d.lastSeen < 12000) && !d.forcedOffline;
 
+                const label = (d && d.dev && d.dev !== "") ? d.dev : "MODULO " + mac.slice(-5);
                 const card = document.createElement("div");
                 card.className = "device-card";
                 card.onclick = () => openPop(mac);
                 
-                const min = d ? Math.floor(d.sec / 60) : 0;
-                const sec = d ? Math.floor(d.sec % 60) : 0;
+                const min = (d && isOnline) ? Math.floor(d.sec / 60) : 0;
+                const sec = (d && isOnline) ? Math.floor(d.sec % 60) : 0;
 
                 card.innerHTML = `
                     <div class="status-dot ${isOnline ? 'online' : 'offline'}"></div>
                     <span class="dev-name-label">${label}</span>
-                    <div class="money-val">${d ? d.money.toFixed(2) : '0.00'}€</div>
+                    <div class="money-val">${(d && isOnline) ? d.money.toFixed(2) : '---'}€</div>
                     <div class="timer-val">${min.toString().padStart(2,'0')}:${sec.toString().padStart(2,'0')}</div>
                     <div style="font-size:9px; margin-top:8px; opacity:0.3;">${mac}</div>
                 `;
@@ -226,17 +242,20 @@
         }
 
         function updatePopupData(d) {
+            const isOnline = d && (Date.now() - d.lastSeen < 12000) && !d.forcedOffline;
+            
             const min = Math.floor(d.sec / 60);
             const sec = Math.floor(d.sec % 60);
-            document.getElementById("view-sec").innerText = `${min.toString().padStart(2,'0')}:${sec.toString().padStart(2,'0')}`;
-            document.getElementById("view-money").innerText = d.money.toFixed(2) + "€";
+            document.getElementById("view-sec").innerText = isOnline ? `${min.toString().padStart(2,'0')}:${sec.toString().padStart(2,'0')}` : "--:--";
+            document.getElementById("view-money").innerText = isOnline ? d.money.toFixed(2) + "€" : "---€";
             
-            // Visualizza SSID e Pass
             document.getElementById("view-ssid").innerText = d.wifi_ssid || "N/A";
             document.getElementById("view-pass").innerText = d.wifi_pass || "N/A";
+            
+            const lastDate = new Date(d.lastSeen).toLocaleTimeString();
+            document.getElementById("view-lastseen").innerText = isOnline ? "Adesso" : "Ultimo segnale: " + lastDate;
 
-            // Visualizza indicatore grafico WiFi
-            document.getElementById("wifi-indicator").innerHTML = getWifiIcon(d.rssi) + ` <span style="font-size:12px; margin-left:5px;">${d.rssi} dBm</span>`;
+            document.getElementById("wifi-indicator").innerHTML = isOnline ? getWifiIcon(d.rssi) + ` <span style="font-size:12px; margin-left:5px;">${d.rssi} dBm</span>` : "DISCONNESSO";
             
             if(document.activeElement.tagName !== 'INPUT') {
                 document.getElementById("set-dev-name").value = d.dev || "";
@@ -247,6 +266,7 @@
         }
 
         function saveParams() {
+            if(!selectedMac) return;
             const payload = {
                 dev: document.getElementById("set-dev-name").value,
                 sec_p: parseInt(document.getElementById("set-sec-p").value),
@@ -254,10 +274,11 @@
                 c_val: parseFloat(document.getElementById("set-c-val").value)
             };
             mqttClient.publish(`cas_system/cmd/${selectedMac}`, JSON.stringify(payload));
-            alert("Configurazione salvata!");
+            alert("Configurazione inviata!");
         }
 
         function sendCmd(cmd) {
+            if(!selectedMac) return;
             mqttClient.publish(`cas_system/cmd/${selectedMac}`, JSON.stringify({ cmd: cmd }));
         }
 
