@@ -169,7 +169,17 @@
                     const data = JSON.parse(msg.toString());
                     const m = data.mac.toUpperCase();
                     
-                    // Se riceve segnale esplicito di offline (es. Last Will)
+                    // --- LOGICA FILTRO TIMESTAMP (Ignora i messaggi RETAINED vecchi) ---
+                    const oraAttuale = Math.floor(Date.now() / 1000);
+                    const oraMessaggio = data.ts; 
+                    
+                    // Se il messaggio è più vecchio di 20 secondi rispetto all'ora del browser, lo scartiamo
+                    if (oraAttuale - oraMessaggio > 20) {
+                        console.log("Scartato messaggio vecchio di: " + m);
+                        return; 
+                    }
+
+                    // Gestione offline esplicito (Last Will)
                     if(data.status === "offline") {
                         if(devices[m]) devices[m].forcedOffline = true;
                     } else {
@@ -178,10 +188,10 @@
                     
                     renderGrid();
                     if(selectedMac === m) updatePopupData(devices[m]);
-                } catch(e) { console.error("Errore JSON", e); }
+                } catch(e) { console.error("Errore ricezione", e); }
             });
 
-            // Avvia il Watchdog: controlla lo stato ogni 2 secondi
+            // Watchdog ogni 2 secondi per aggiornare i pallini rosso/verde
             setInterval(renderGrid, 2000);
         }
 
@@ -206,13 +216,12 @@
             const container = document.getElementById("deviceGrid");
             if (!container) return;
             
-            // Per evitare sfarfallii, memorizziamo se dobbiamo ricostruire tutto o solo aggiornare
             container.innerHTML = "";
             currentUser.mac.forEach(m => {
                 const mac = m.trim().toUpperCase();
                 const d = devices[mac];
                 
-                // LOGICA ONLINE: deve aver inviato dati negli ultimi 12 secondi e non essere in forcedOffline
+                // Un modulo è online solo se il dato è fresco (< 12 secondi)
                 const isOnline = d && (Date.now() - d.lastSeen < 12000) && !d.forcedOffline;
 
                 const label = (d && d.dev && d.dev !== "") ? d.dev : "MODULO " + mac.slice(-5);
@@ -252,12 +261,12 @@
             document.getElementById("view-ssid").innerText = d.wifi_ssid || "N/A";
             document.getElementById("view-pass").innerText = d.wifi_pass || "N/A";
             
-            const lastDate = new Date(d.lastSeen).toLocaleTimeString();
+            const lastDate = d ? new Date(d.lastSeen).toLocaleTimeString() : "--";
             document.getElementById("view-lastseen").innerText = isOnline ? "Adesso" : "Ultimo segnale: " + lastDate;
 
             document.getElementById("wifi-indicator").innerHTML = isOnline ? getWifiIcon(d.rssi) + ` <span style="font-size:12px; margin-left:5px;">${d.rssi} dBm</span>` : "DISCONNESSO";
             
-            if(document.activeElement.tagName !== 'INPUT') {
+            if(document.activeElement.tagName !== 'INPUT' && d) {
                 document.getElementById("set-dev-name").value = d.dev || "";
                 document.getElementById("set-sec-p").value = d.sec_p;
                 document.getElementById("set-min-i").value = d.min_i;
