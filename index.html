@@ -7,242 +7,168 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mqtt/4.3.7/mqtt.min.js"></script>
     <style>
         :root { --bg: #0f172a; --card: #1e293b; --accent: #3b82f6; --text: #f8fafc; --online: #10b981; --offline: #ef4444; }
-        body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 0; overflow-x: hidden; }
+        body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 0; }
         
         /* LOGIN */
         #login-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; padding: 20px; box-sizing: border-box; }
-        .login-box { background: var(--card); padding: 30px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); text-align: center; width: 100%; max-width: 320px; }
-        input { width: 100%; padding: 15px; margin: 20px 0; border-radius: 10px; border: 1px solid #334155; background: var(--bg); color: white; text-align: center; font-size: 20px; box-sizing: border-box; }
-        .btn-login { width: 100%; padding: 15px; border-radius: 10px; border: none; background: var(--accent); color: white; font-weight: bold; font-size: 16px; cursor: pointer; }
+        .login-box { background: var(--card); padding: 30px; border-radius: 20px; text-align: center; width: 100%; max-width: 320px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
+        input { width: 100%; padding: 15px; margin: 20px 0; border-radius: 10px; border: 1px solid #334155; background: var(--bg); color: white; text-align: center; font-size: 20px; }
+        .btn-login { width: 100%; padding: 15px; border-radius: 10px; border: none; background: var(--accent); color: white; font-weight: bold; cursor: pointer; }
 
         /* DASHBOARD */
-        #main-screen { display: none; padding: 20px; animation: fadeIn 0.5s; }
-        header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 30px; }
-        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; }
+        #main-screen { display: none; padding: 20px; }
+        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 15px; }
         
-        /* DEVICE CARD */
-        .device-card { background: var(--card); padding: 20px; border-radius: 15px; text-align: center; position: relative; transition: 0.2s; border: 2px solid transparent; cursor: pointer; }
-        .device-card:active { transform: scale(0.96); background: #2d3748; }
-        .status-dot { position: absolute; top: 12px; right: 12px; width: 10px; height: 10px; border-radius: 50%; }
-        .online-dot { background: var(--online); box-shadow: 0 0 8px var(--online); }
-        .offline-dot { background: var(--offline); }
-        .money-val { font-size: 26px; font-weight: bold; color: var(--accent); margin: 10px 0; }
-        .mac-sub { font-size: 10px; color: #64748b; font-family: monospace; letter-spacing: 1px; }
+        /* CARD */
+        .device-card { background: var(--card); padding: 20px; border-radius: 15px; text-align: center; position: relative; border: 2px solid transparent; cursor: pointer; transition: 0.2s; }
+        .status-dot { position: absolute; top: 12px; right: 12px; width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--card); }
+        .online { background: var(--online); box-shadow: 0 0 8px var(--online); }
+        .offline { background: var(--offline); }
+        .money-val { font-size: 28px; font-weight: bold; color: var(--accent); margin: 10px 0; }
+        .mac-label { font-size: 10px; color: #64748b; font-family: monospace; }
 
-        /* POPUP GESTIONE */
-        #overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 100; justify-content: center; align-items: center; backdrop-filter: blur(5px); }
-        .popup { background: var(--card); width: 85%; max-width: 380px; border-radius: 25px; padding: 25px; position: relative; box-shadow: 0 20px 40px rgba(0,0,0,0.4); }
-        .close-pop { position: absolute; top: 15px; right: 20px; font-size: 28px; color: #94a3b8; cursor: pointer; }
-        .pop-tool { margin: 25px 0; display: flex; flex-direction: column; gap: 12px; }
-        .btn-cmd { padding: 16px; border-radius: 12px; border: none; font-weight: bold; font-size: 15px; cursor: pointer; color: white; transition: 0.2s; }
-        .btn-open { background: var(--accent); }
-        .btn-reset { background: #475569; }
-        .tech-info { background: var(--bg); padding: 15px; border-radius: 12px; font-size: 12px; line-height: 1.6; color: #cbd5e1; }
-
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        /* POPUP */
+        #overlay { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:100; justify-content:center; align-items:center; backdrop-filter: blur(4px); }
+        .popup { background: var(--card); width: 85%; max-width: 350px; border-radius: 20px; padding: 25px; position: relative; }
+        .btn-cmd { width: 100%; padding: 15px; margin: 10px 0; border-radius: 10px; border: none; font-weight: bold; color: white; cursor: pointer; }
     </style>
 </head>
 <body>
 
-    <!-- 1. LOGIN -->
     <div id="login-screen">
         <div class="login-box">
-            <h2 style="margin:0; color:var(--accent); letter-spacing: 2px;">C.A.S. PRO</h2>
-            <p style="font-size:13px; color:#94a3b8; margin-top:5px">Inserisci il codice cliente</p>
-            <input type="password" id="pinInput" placeholder="••••" maxlength="8" inputmode="numeric">
+            <h2 style="color:var(--accent)">C.A.S. PRO</h2>
+            <input type="password" id="pinInput" placeholder="PIN CLIENTE" maxlength="8">
             <button class="btn-login" onclick="checkLogin()">ACCEDI</button>
         </div>
     </div>
 
-    <!-- 2. DASHBOARD -->
     <div id="main-screen">
         <header>
             <div>
-                <h2 id="clientName" style="margin:0; font-size: 24px;">Caricamento...</h2>
-                <div id="expiryInfo" style="font-size:12px; font-weight: bold; margin-top:3px"></div>
+                <h2 id="clientName" style="margin:0">---</h2>
+                <div id="expiryInfo" style="font-size:12px">---</div>
             </div>
-            <button onclick="location.reload()" style="background:#334155; border:none; color:white; border-radius:8px; padding:8px 15px; font-size:11px">ESCI</button>
+            <button onclick="location.reload()" style="background:#334155; color:white; border:none; padding:8px 12px; border-radius:5px">ESCI</button>
         </header>
-
         <div class="grid" id="deviceGrid"></div>
-        
-        <p style="text-align:center; color:#64748b; font-size:11px; margin-top:40px; line-height:1.5">
-            I dati si aggiornano automaticamente.<br>
-            Fai doppio clic su un modulo per gestire.
-        </p>
     </div>
 
-    <!-- 3. POPUP GESTIONE -->
     <div id="overlay">
         <div class="popup">
-            <span class="close-pop" onclick="closePopup()">&times;</span>
-            <h3 id="popTitle" style="margin-top:0; color:var(--accent)">Gestione Modulo</h3>
-            <div id="popDetails" style="font-size:12px; color:#94a3b8; margin-bottom:20px"></div>
-            
-            <div class="pop-tool">
-                <button class="btn-cmd btn-open" onclick="sendCommand('open')">APRI PORTA / START</button>
-                <button class="btn-cmd btn-reset" onclick="sendCommand('reset')">AZZERA INCASSO</button>
-            </div>
-            
-            <div class="tech-info">
-                <strong style="color:var(--accent)">PARAMETRI TECNICI:</strong><br>
-                Segnale (RSSI): <span id="valRssi" style="color:white">--</span> dBm<br>
-                Ultimo pacchetto: <span id="valTime" style="color:white">--</span>
-            </div>
+            <h3 id="popTitle" style="margin-top:0">Gestione</h3>
+            <p id="popStatus" style="font-size:13px; color:#94a3b8"></p>
+            <button class="btn-cmd" style="background:var(--accent)" onclick="sendCmd('REMOTE_START')">APRI / START</button>
+            <button class="btn-cmd" style="background:#475569" onclick="sendCmd('RESET_TOTAL')">AZZERA INCASSO</button>
+            <button class="btn-cmd" style="background:#dc3545" onclick="sendCmd('REMOTE_STOP')">STOP EMERGENZA</button>
+            <button onclick="closePop()" style="background:none; border:none; color:#64748b; width:100%; margin-top:10px">Chiudi</button>
         </div>
     </div>
 
     <script>
         let currentUser = null;
-        let devicesData = {};
+        let devices = {};
         let selectedMac = null;
 
-        // --- LOGIN ---
+        // Configurazione MQTT
+        const mqttClient = mqtt.connect('wss://4c3d155d119d45b48f9a1d88d1963d9a.s1.eu.hivemq.cloud:8884/mqtt', {
+            username: 'admin_cas_system',
+            password: 'CAS_gate_2026!#',
+            clientId: 'WEB_' + Math.random().toString(16).substr(2, 5)
+        });
+
         async function checkLogin() {
             const pin = document.getElementById("pinInput").value;
-            if(!pin) return;
-            
             try {
-                const resp = await fetch(`database_clienti.json?t=${Date.now()}`);
-                const db = await resp.json();
-
+                const r = await fetch(`database_clienti.json?v=${Date.now()}`);
+                const db = await r.json();
                 if (db[pin]) {
-                    const user = db[pin];
-                    const oggi = new Date().toISOString().split('T')[0];
-
-                    if (user.scadenza < oggi) {
-                        alert("ERRORE: La tua licenza è scaduta il " + user.scadenza);
-                        return;
-                    }
-
-                    currentUser = user;
-                    showDashboard();
-                } else {
-                    alert("Codice cliente non valido");
-                }
-            } catch (e) {
-                alert("Errore caricamento database. Controlla la connessione.");
-            }
+                    currentUser = db[pin];
+                    startApp();
+                } else { alert("PIN errato"); }
+            } catch(e) { alert("Errore database"); }
         }
 
-        function showDashboard() {
+        function startApp() {
             document.getElementById("login-screen").style.display = "none";
             document.getElementById("main-screen").style.display = "block";
             document.getElementById("clientName").innerText = currentUser.nome;
-            document.getElementById("expiryInfo").innerText = "SCADENZA: " + currentUser.scadenza;
-            document.getElementById("expiryInfo").style.color = "#10b981";
-
-            updateGrid(); // Mostra subito i quadratini
-            initMQTT();   // Poi attiva i dati live
+            document.getElementById("expiryInfo").innerText = "Scadenza: " + currentUser.scadenza;
+            
+            // Sottoscrizione immediata ai topic corretti
+            currentUser.mac.forEach(m => {
+                const cleanMac = m.trim().toUpperCase();
+                mqttClient.subscribe(`cas_system/status/${cleanMac}`);
+                console.log("In ascolto su:", cleanMac);
+            });
+            
+            renderGrid();
         }
 
-        // --- MQTT ---
-        const mqttOptions = {
-            connectTimeout: 5000,
-            clientId: 'web_' + Math.random().toString(16).substr(2, 8),
-            username: 'admin_cas_system',
-            password: 'CAS_gate_2026!#',
-            protocol: 'wss'
-        };
+        mqttClient.on('message', (topic, msg) => {
+            try {
+                const data = JSON.parse(msg.toString());
+                const m = data.mac.toUpperCase();
+                devices[m] = { ...data, lastSeen: Date.now() };
+                renderGrid();
+                if(selectedMac === m) {
+                    document.getElementById("popStatus").innerText = "Segnale: " + data.rssi + " dBm | Online";
+                }
+            } catch(e) { console.error("JSON Error"); }
+        });
 
-        const client = mqtt.connect('wss://4c3d155d119d45b48f9a1d88d1963d9a.s1.eu.hivemq.cloud:8884/mqtt', mqttOptions);
-
-        function initMQTT() {
-            client.on('connect', () => {
-                currentUser.mac.forEach(mac => {
-                    const cleanMac = mac.trim().toUpperCase();
-                    client.subscribe(`cas_system/status/${cleanMac}`);
-                    console.log("Iscritto a:", cleanMac);
-                });
-            });
-
-            client.on('message', (topic, message) => {
-                try {
-                    const data = JSON.parse(message.toString());
-                    devicesData[data.mac.toUpperCase()] = { ...data, ts: Date.now() };
-                    updateGrid();
-                    if(selectedMac === data.mac.toUpperCase()) updatePopup(data);
-                } catch(e) {}
-            });
-        }
-
-        // --- INTERFACCIA ---
-        function updateGrid() {
-            const grid = document.getElementById("deviceGrid");
-            grid.innerHTML = "";
-
-            if (!currentUser.mac || currentUser.mac.length === 0) {
-                grid.innerHTML = "<p style='grid-column: 1/-1; color:#64748b'>Nessun modulo abilitato.</p>";
-                return;
-            }
-
-            currentUser.mac.forEach(mac => {
-                const macClean = mac.trim().toUpperCase();
-                const d = devicesData[macClean];
-                const isOnline = d && (Date.now() - d.ts < 30000); // Online se visto negli ultimi 30s
+        function renderGrid() {
+            const container = document.getElementById("deviceGrid");
+            container.innerHTML = "";
+            
+            currentUser.mac.forEach(m => {
+                const mac = m.trim().toUpperCase();
+                const d = devices[mac];
+                const isOnline = d && (Date.now() - d.lastSeen < 15000); // 15 secondi timeout
                 
                 const card = document.createElement("div");
                 card.className = "device-card";
                 
-                // Sistema doppio clic/tocco
-                let lastClick = 0;
-                card.onclick = () => {
+                // Gestione click per iPhone
+                let lastTap = 0;
+                card.addEventListener('touchend', (e) => {
                     let now = Date.now();
-                    if (now - lastClick < 350) openPopup(macClean);
-                    lastClick = now;
-                };
+                    if(now - lastTap < 300) openPop(mac);
+                    lastTap = now;
+                });
+                card.onclick = () => { openPop(mac); };
 
                 card.innerHTML = `
-                    <div class="status-dot ${isOnline ? 'online-dot' : 'offline-dot'}"></div>
-                    <div style="font-size:10px; color:#64748b; font-weight:bold">MODULO</div>
+                    <div class="status-dot ${isOnline ? 'online' : 'offline'}"></div>
+                    <div style="font-size:11px; opacity:0.7">MODULO</div>
                     <div class="money-val">${d ? d.money.toFixed(2) : '0.00'}€</div>
-                    <div class="mac-sub">${macClean}</div>
-                    <div style="font-size:10px; margin-top:8px; font-weight:bold; color:${isOnline ? '#10b981' : '#64748b'}">
-                        ${isOnline ? 'DISPONIBILE' : 'NON RAGGIUNGIBILE'}
+                    <div class="mac-label">${mac}</div>
+                    <div style="font-size:10px; margin-top:10px; color:${isOnline ? '#10b981' : '#64748b'}">
+                        ${isOnline ? 'CONNESSO' : 'NON RAGGIUNGIBILE'}
                     </div>
                 `;
-                grid.appendChild(card);
+                container.appendChild(card);
             });
         }
 
-        // --- GESTIONE POPUP ---
-        function openPopup(mac) {
+        function openPop(mac) {
             selectedMac = mac;
-            document.getElementById("overlay").style.display = "flex";
             document.getElementById("popTitle").innerText = "MODULO " + mac;
-            const d = devicesData[mac];
-            if(d) updatePopup(d);
-            else {
-                document.getElementById("popDetails").innerText = "Nessun dato live ricevuto ancora.";
-                document.getElementById("valRssi").innerText = "--";
-                document.getElementById("valTime").innerText = "--";
-            }
+            document.getElementById("overlay").style.display = "flex";
         }
 
-        function updatePopup(d) {
-            document.getElementById("popDetails").innerText = "Connessione stabilita";
-            document.getElementById("valRssi").innerText = d.rssi || "--";
-            document.getElementById("valTime").innerText = new Date(d.ts).toLocaleTimeString();
-        }
+        function closePop() { document.getElementById("overlay").style.display = "none"; }
 
-        function closePopup() {
-            document.getElementById("overlay").style.display = "none";
-            selectedMac = null;
-        }
-
-        function sendCommand(action) {
+        function sendCmd(cmd) {
             if(!selectedMac) return;
             const topic = `cas_system/cmd/${selectedMac}`;
-            const payload = JSON.stringify({ action: action, from: "web_admin" });
-            client.publish(topic, payload);
-            alert("Inviato: " + action.toUpperCase());
+            // Il tuo ESP si aspetta {"cmd": "NOME_COMANDO"}
+            const payload = JSON.stringify({ cmd: cmd });
+            mqttClient.publish(topic, payload);
+            alert("Comando inviato!");
+            closePop();
         }
-
-        // Tasto Invio per Login
-        document.getElementById("pinInput").addEventListener("keyup", (e) => {
-            if(e.key === "Enter") checkLogin();
-        });
-
     </script>
 </body>
 </html>
