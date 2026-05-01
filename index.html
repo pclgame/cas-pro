@@ -16,92 +16,101 @@
         header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; border-bottom: 1px solid var(--border); padding-bottom: 15px; }
         
         .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 15px; }
-        .device-card { background: var(--card); padding: 20px; border-radius: 15px; text-align: center; position: relative; border: 2px solid var(--border); cursor: pointer; }
+        .device-card { background: var(--card); padding: 20px; border-radius: 15px; text-align: center; position: relative; border: 2px solid var(--border); cursor: pointer; transition: 0.3s; }
+        .device-card:hover { border-color: var(--accent); }
         .status-dot { position: absolute; top: 12px; right: 12px; width: 12px; height: 12px; border-radius: 50%; }
-        .online { background: var(--online); }
+        .online { background: var(--online); box-shadow: 0 0 8px var(--online); }
         .offline { background: var(--offline); }
         
+        .dev-name-label { font-size: 13px; font-weight: bold; color: #94a3b8; margin-bottom: 8px; display: block; text-transform: uppercase; }
         .money-val { font-size: 24px; font-weight: bold; color: var(--accent); margin: 5px 0; }
         .timer-val { font-size: 18px; font-family: monospace; color: #fbbf24; }
 
         #overlay { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:100; overflow-y: auto; padding: 20px; box-sizing: border-box; }
-        .popup { background: var(--card); width: 100%; max-width: 500px; border-radius: 20px; padding: 25px; margin: auto; }
+        .popup { background: var(--card); width: 100%; max-width: 500px; border-radius: 20px; padding: 25px; margin: auto; border: 1px solid var(--border); }
         .section { background: var(--bg); padding: 12px; border-radius: 12px; margin-bottom: 15px; border: 1px solid var(--border); }
         .section-title { font-size: 11px; color: var(--accent); font-weight: bold; text-transform: uppercase; margin-bottom: 8px; display: block; }
         
-        .row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 14px; }
-        input { background: #1e293b; border: 1px solid var(--border); color: white; padding: 8px; border-radius: 5px; width: 80px; text-align: right; }
-        .btn-cmd { width: 100%; padding: 12px; border-radius: 10px; border: none; font-weight: bold; color: white; cursor: pointer; margin-top: 10px; }
-        .close-btn { background: #ef4444; color: white; border: none; padding: 10px 20px; border-radius: 8px; width: 100%; margin-top: 20px; }
+        .row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-size: 14px; }
+        input { background: #1e293b; border: 1px solid var(--border); color: white; padding: 8px; border-radius: 5px; width: 100px; text-align: right; }
+        input.wide { width: 180px; text-align: left; }
+        
+        .btn-cmd { width: 100%; padding: 12px; border-radius: 10px; border: none; font-weight: bold; color: white; cursor: pointer; margin-top: 10px; transition: 0.2s; }
+        .btn-cmd:active { opacity: 0.7; }
+        .close-btn { background: #ef4444; color: white; border: none; padding: 10px 20px; border-radius: 8px; width: 100%; margin-top: 20px; cursor: pointer; }
         
         .scadenza-box { font-size: 12px; font-weight: bold; padding: 4px 8px; border-radius: 5px; background: #334155; }
     </style>
 </head>
 <body>
 
-    <!-- SCHERMATA LOGIN -->
+    <!-- LOGIN -->
     <div id="login-screen">
-        <div style="background:var(--card); padding:30px; border-radius:20px; width:100%; max-width:320px;">
+        <div style="background:var(--card); padding:30px; border-radius:20px; width:100%; max-width:320px; border:1px solid var(--border);">
             <h2 style="color:var(--accent); margin-bottom:20px;">C.A.S. SYSTEM</h2>
             <input type="password" id="pinInput" placeholder="INSERISCI PIN" style="width:100%; text-align:center; font-size:22px; margin-bottom:20px;">
             <button onclick="checkLogin()" class="btn-cmd" style="background:var(--accent)">ACCEDI</button>
         </div>
     </div>
 
-    <!-- SCHERMATA SCADENZA (BLOCCO TOTALE) -->
+    <!-- SCADENZA -->
     <div id="expired-screen">
         <h1 style="font-size:60px; margin:0;">⚠️</h1>
         <h2 style="color:var(--expired);">LICENZA SCADUTA</h2>
         <p style="opacity:0.8;">L'accesso ai dispositivi è stato sospeso.</p>
         <p id="expiredDateInfo" style="font-weight:bold;"></p>
-        <div style="margin-top:30px; padding:20px; border:1px dashed var(--expired); border-radius:10px;">
-            Contatta il fornitore per il rinnovo.
-        </div>
         <button onclick="location.reload()" class="btn-cmd" style="background:var(--border); margin-top:20px; width:auto; padding:10px 30px;">INDIETRO</button>
     </div>
 
-    <!-- DASHBOARD PRINCIPALE -->
+    <!-- DASHBOARD -->
     <div id="main-screen">
         <header>
             <div>
                 <h2 id="clientName" style="margin:0">---</h2>
                 <div id="expiryDisplay" class="scadenza-box" style="margin-top:5px; display:inline-block;">Scadenza: --/--/----</div>
             </div>
-            <button onclick="location.reload()" style="background:var(--border); color:white; border:none; padding:10px; border-radius:8px;">Esci</button>
+            <button onclick="location.reload()" style="background:var(--border); color:white; border:none; padding:10px; border-radius:8px; cursor:pointer;">Esci</button>
         </header>
         <div class="grid" id="deviceGrid"></div>
     </div>
 
-    <!-- POPUP CONSOLE (Solo se non scaduto) -->
+    <!-- POPUP CONSOLE -->
     <div id="overlay">
         <div class="popup">
             <h2 id="popTitle" style="margin-top:0; color:var(--accent);">MODULO</h2>
+            
             <div class="section">
-                <span class="section-title">Live</span>
-                <div class="row"><span>Tempo:</span> <span id="view-sec" class="timer-val">00:00</span></div>
-                <div class="row"><span>Incasso:</span> <span id="view-money">0.00€</span></div>
-                <div class="row"><span>WiFi:</span> <span id="view-rssi">--</span></div>
+                <span class="section-title">Identificazione</span>
+                <div class="row">
+                    <span>Nome Personalizzato:</span>
+                    <input type="text" id="set-dev-name" class="wide" placeholder="Esempio: Doccia 1">
+                </div>
             </div>
+
             <div class="section">
-                <span class="section-title">Rete</span>
-                <div class="row"><span>SSID:</span> <span id="view-ssid">--</span></div>
-                <div class="row"><span>Pass:</span> <span id="view-pass">--</span></div>
+                <span class="section-title">Live Status</span>
+                <div class="row"><span>Tempo Rimanente:</span> <span id="view-sec" class="timer-val">00:00</span></div>
+                <div class="row"><span>Incasso Totale:</span> <span id="view-money">0.00€</span></div>
+                <div class="row"><span>Segnale WiFi:</span> <span id="view-rssi">--</span></div>
             </div>
+
             <div class="section">
-                <span class="section-title">Parametri</span>
-                <div class="row"><span>Sec/Scatto:</span><input type="number" id="set-sec-p"></div>
-                <div class="row"><span>Impulsi Min:</span><input type="number" id="set-min-i"></div>
-                <div class="row"><span>Valore €:</span><input type="number" step="0.1" id="set-c-val"></div>
-                <button class="btn-cmd" style="background: #10b981;" onclick="saveParams()">SALVA</button>
+                <span class="section-title">Parametri di Lavoro</span>
+                <div class="row"><span>Sec per Scatto:</span><input type="number" id="set-sec-p"></div>
+                <div class="row"><span>Impulsi Minimi:</span><input type="number" id="set-min-i"></div>
+                <div class="row"><span>Valore Scatto €:</span><input type="number" step="0.1" id="set-c-val"></div>
+                <button class="btn-cmd" style="background: #10b981;" onclick="saveParams()">SALVA CONFIGURAZIONE</button>
             </div>
+
             <div class="section">
-                <span class="section-title">Comandi</span>
+                <span class="section-title">Comandi Rapidi</span>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
                     <button class="btn-cmd" style="background:var(--accent)" onclick="sendCmd('REMOTE_START')">START</button>
                     <button class="btn-cmd" style="background:#ef4444;" onclick="sendCmd('REMOTE_STOP')">STOP</button>
                 </div>
-                <button class="btn-cmd" style="background:#475569" onclick="sendCmd('RESET_TOTAL')">RESET INCASSO</button>
+                <button class="btn-cmd" style="background:#475569" onclick="sendCmd('RESET_TOTAL')">AZZERA INCASSO</button>
             </div>
+            
             <button class="close-btn" onclick="closePop()">CHIUDI</button>
         </div>
     </div>
@@ -114,24 +123,24 @@
 
         async function checkLogin() {
             const pin = document.getElementById("pinInput").value;
-            const r = await fetch(`database_clienti.json?v=${Date.now()}`);
-            const db = await r.json();
-            
-            if (db[pin]) { 
-                currentUser = db[pin];
-                const today = new Date();
-                const exp = new Date(currentUser.scadenza);
+            try {
+                const r = await fetch(`database_clienti.json?v=${Date.now()}`);
+                const db = await r.json();
+                
+                if (db[pin]) { 
+                    currentUser = db[pin];
+                    const today = new Date();
+                    const exp = new Date(currentUser.scadenza);
 
-                if (today > exp) {
-                    // SE SCADUTO: MOSTRA SCHERMATA BLOCCO E NON CONNETTERE MQTT
-                    document.getElementById("login-screen").style.display = "none";
-                    document.getElementById("expired-screen").style.display = "flex";
-                    document.getElementById("expiredDateInfo").innerText = "Data scadenza: " + exp.toLocaleDateString('it-IT');
-                } else {
-                    // SE VALIDO: PROCEDI CON CONNESSIONE E DASHBOARD
-                    startApp();
-                }
-            } else { alert("PIN Errato"); }
+                    if (today > exp) {
+                        document.getElementById("login-screen").style.display = "none";
+                        document.getElementById("expired-screen").style.display = "flex";
+                        document.getElementById("expiredDateInfo").innerText = "Scaduta il: " + exp.toLocaleDateString('it-IT');
+                    } else {
+                        startApp();
+                    }
+                } else { alert("PIN Errato"); }
+            } catch(e) { alert("Errore caricamento database"); }
         }
 
         function startApp() {
@@ -140,11 +149,10 @@
             document.getElementById("clientName").innerText = currentUser.nome;
             document.getElementById("expiryDisplay").innerText = "Scadenza: " + new Date(currentUser.scadenza).toLocaleDateString('it-IT');
 
-            // Avvia connessione MQTT solo se la licenza è valida
             mqttClient = mqtt.connect('wss://4c3d155d119d45b48f9a1d88d1963d9a.s1.eu.hivemq.cloud:8884/mqtt', {
                 username: 'admin_cas_system',
                 password: 'CAS_gate_2026!#',
-                clientId: 'WEB_SAFE_' + Math.random().toString(16).substr(2, 5)
+                clientId: 'WEB_' + Math.random().toString(16).substr(2, 5)
             });
 
             mqttClient.on('connect', () => {
@@ -168,7 +176,11 @@
             currentUser.mac.forEach(m => {
                 const mac = m.trim().toUpperCase();
                 const d = devices[mac];
-                const isOnline = d && (Date.now() - d.lastSeen < 15000);
+                const isOnline = d && (Date.now() - d.lastSeen < 20000);
+                
+                // Priorità al nome personalizzato (config.device_name inviato dall'ESP)
+                const label = (d && d.dev && d.dev !== "") ? d.dev : "MODULO " + mac.slice(-5);
+
                 const card = document.createElement("div");
                 card.className = "device-card";
                 card.onclick = () => openPop(mac);
@@ -178,9 +190,10 @@
 
                 card.innerHTML = `
                     <div class="status-dot ${isOnline ? 'online' : 'offline'}"></div>
+                    <span class="dev-name-label">${label}</span>
                     <div class="money-val">${d ? d.money.toFixed(2) : '0.00'}€</div>
                     <div class="timer-val">${min.toString().padStart(2,'0')}:${sec.toString().padStart(2,'0')}</div>
-                    <div style="font-size:10px; margin-top:5px; opacity:0.5">${mac}</div>
+                    <div style="font-size:9px; margin-top:8px; opacity:0.3; font-family:monospace;">${mac}</div>
                 `;
                 container.appendChild(card);
             });
@@ -189,7 +202,7 @@
         function openPop(mac) {
             selectedMac = mac;
             const d = devices[mac];
-            document.getElementById("popTitle").innerText = "MODULO " + mac;
+            document.getElementById("popTitle").innerText = "GESTIONE MODULO";
             if(d) updatePopupData(d);
             document.getElementById("overlay").style.display = "flex";
         }
@@ -200,9 +213,10 @@
             document.getElementById("view-sec").innerText = `${min.toString().padStart(2,'0')}:${sec.toString().padStart(2,'0')}`;
             document.getElementById("view-money").innerText = d.money.toFixed(2) + "€";
             document.getElementById("view-rssi").innerText = d.rssi + " dBm";
-            document.getElementById("view-ssid").innerText = d.wifi_ssid || "--";
-            document.getElementById("view-pass").innerText = d.wifi_pass || "--";
+            
+            // Aggiorna input solo se l'utente non sta scrivendo
             if(document.activeElement.tagName !== 'INPUT') {
+                document.getElementById("set-dev-name").value = d.dev || "";
                 document.getElementById("set-sec-p").value = d.sec_p;
                 document.getElementById("set-min-i").value = d.min_i;
                 document.getElementById("set-c-val").value = d.c_val;
@@ -211,12 +225,13 @@
 
         function saveParams() {
             const payload = {
+                dev: document.getElementById("set-dev-name").value,
                 sec_p: parseInt(document.getElementById("set-sec-p").value),
                 min_i: parseInt(document.getElementById("set-min-i").value),
                 c_val: parseFloat(document.getElementById("set-c-val").value)
             };
             mqttClient.publish(`cas_system/cmd/${selectedMac}`, JSON.stringify(payload));
-            alert("Inviato!");
+            alert("Impostazioni inviate al dispositivo!");
         }
 
         function sendCmd(cmd) {
