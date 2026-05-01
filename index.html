@@ -35,6 +35,10 @@
         input { background: #1e293b; border: 1px solid var(--border); color: white; padding: 8px; border-radius: 5px; width: 100px; text-align: right; }
         input.wide { width: 180px; text-align: left; }
         
+        /* Stile indicatore WiFi */
+        .wifi-bar-container { display: flex; align-items: center; gap: 4px; }
+        .wifi-bar { width: 4px; border-radius: 1px; background: #475569; }
+        
         .btn-cmd { width: 100%; padding: 12px; border-radius: 10px; border: none; font-weight: bold; color: white; cursor: pointer; margin-top: 10px; transition: 0.2s; }
         .btn-cmd:active { opacity: 0.7; }
         .close-btn { background: #ef4444; color: white; border: none; padding: 10px 20px; border-radius: 8px; width: 100%; margin-top: 20px; cursor: pointer; }
@@ -44,7 +48,6 @@
 </head>
 <body>
 
-    <!-- LOGIN -->
     <div id="login-screen">
         <div style="background:var(--card); padding:30px; border-radius:20px; width:100%; max-width:320px; border:1px solid var(--border);">
             <h2 style="color:var(--accent); margin-bottom:20px;">C.A.S. SYSTEM</h2>
@@ -53,7 +56,6 @@
         </div>
     </div>
 
-    <!-- SCADENZA -->
     <div id="expired-screen">
         <h1 style="font-size:60px; margin:0;">⚠️</h1>
         <h2 style="color:var(--expired);">LICENZA SCADUTA</h2>
@@ -62,7 +64,6 @@
         <button onclick="location.reload()" class="btn-cmd" style="background:var(--border); margin-top:20px; width:auto; padding:10px 30px;">INDIETRO</button>
     </div>
 
-    <!-- DASHBOARD -->
     <div id="main-screen">
         <header>
             <div>
@@ -74,7 +75,6 @@
         <div class="grid" id="deviceGrid"></div>
     </div>
 
-    <!-- POPUP CONSOLE -->
     <div id="overlay">
         <div class="popup">
             <h2 id="popTitle" style="margin-top:0; color:var(--accent);">MODULO</h2>
@@ -82,16 +82,25 @@
             <div class="section">
                 <span class="section-title">Identificazione</span>
                 <div class="row">
-                    <span>Nome Personalizzato:</span>
-                    <input type="text" id="set-dev-name" class="wide" placeholder="Esempio: Doccia 1">
+                    <span>Nome Modulo:</span>
+                    <input type="text" id="set-dev-name" class="wide">
                 </div>
             </div>
 
             <div class="section">
-                <span class="section-title">Live Status</span>
-                <div class="row"><span>Tempo Rimanente:</span> <span id="view-sec" class="timer-val">00:00</span></div>
-                <div class="row"><span>Incasso Totale:</span> <span id="view-money">0.00€</span></div>
-                <div class="row"><span>Segnale WiFi:</span> <span id="view-rssi">--</span></div>
+                <span class="section-title">Stato Attuale</span>
+                <div class="row"><span>Tempo Attivo:</span> <span id="view-sec" class="timer-val">00:00</span></div>
+                <div class="row"><span>Incasso:</span> <span id="view-money">0.00€</span></div>
+                <div class="row">
+                    <span>Qualità Segnale:</span> 
+                    <div id="wifi-indicator" class="wifi-bar-container"></div>
+                </div>
+            </div>
+
+            <div class="section">
+                <span class="section-title">Rete Collegata</span>
+                <div class="row"><span>SSID:</span> <span id="view-ssid" style="color:#94a3b8">--</span></div>
+                <div class="row"><span>Password:</span> <span id="view-pass" style="color:#94a3b8">--</span></div>
             </div>
 
             <div class="section">
@@ -103,12 +112,12 @@
             </div>
 
             <div class="section">
-                <span class="section-title">Comandi Rapidi</span>
+                <span class="section-title">Azioni Rapide</span>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                    <button class="btn-cmd" style="background:var(--accent)" onclick="sendCmd('REMOTE_START')">START</button>
-                    <button class="btn-cmd" style="background:#ef4444;" onclick="sendCmd('REMOTE_STOP')">STOP</button>
+                    <button class="btn-cmd" style="background:var(--accent)" onclick="sendCmd('REMOTE_START')">AVVIA</button>
+                    <button class="btn-cmd" style="background:#ef4444;" onclick="sendCmd('REMOTE_STOP')">FERMA</button>
                 </div>
-                <button class="btn-cmd" style="background:#475569" onclick="sendCmd('RESET_TOTAL')">AZZERA INCASSO</button>
+                <button class="btn-cmd" style="background:#475569" onclick="sendCmd('RESET_TOTAL')">AZZERA CONTATORE</button>
             </div>
             
             <button class="close-btn" onclick="closePop()">CHIUDI</button>
@@ -126,21 +135,17 @@
             try {
                 const r = await fetch(`database_clienti.json?v=${Date.now()}`);
                 const db = await r.json();
-                
                 if (db[pin]) { 
                     currentUser = db[pin];
                     const today = new Date();
                     const exp = new Date(currentUser.scadenza);
-
                     if (today > exp) {
                         document.getElementById("login-screen").style.display = "none";
                         document.getElementById("expired-screen").style.display = "flex";
                         document.getElementById("expiredDateInfo").innerText = "Scaduta il: " + exp.toLocaleDateString('it-IT');
-                    } else {
-                        startApp();
-                    }
+                    } else { startApp(); }
                 } else { alert("PIN Errato"); }
-            } catch(e) { alert("Errore caricamento database"); }
+            } catch(e) { alert("Errore connessione"); }
         }
 
         function startApp() {
@@ -166,8 +171,24 @@
                 renderGrid();
                 if(selectedMac === m) updatePopupData(data);
             });
-
             renderGrid();
+        }
+
+        function getWifiIcon(rssi) {
+            let bars = 0;
+            if (rssi > -60) bars = 4;
+            else if (rssi > -70) bars = 3;
+            else if (rssi > -80) bars = 2;
+            else if (rssi > -90) bars = 1;
+            
+            let html = '<div class="wifi-bar-container">';
+            for(let i=1; i<=4; i++) {
+                let color = i <= bars ? 'var(--online)' : '#475569';
+                if (bars === 1 && i === 1) color = 'var(--offline)';
+                html += `<div class="wifi-bar" style="height:${i*4}px; background:${color}"></div>`;
+            }
+            html += '</div>';
+            return html;
         }
 
         function renderGrid() {
@@ -177,8 +198,6 @@
                 const mac = m.trim().toUpperCase();
                 const d = devices[mac];
                 const isOnline = d && (Date.now() - d.lastSeen < 20000);
-                
-                // Priorità al nome personalizzato (config.device_name inviato dall'ESP)
                 const label = (d && d.dev && d.dev !== "") ? d.dev : "MODULO " + mac.slice(-5);
 
                 const card = document.createElement("div");
@@ -193,7 +212,7 @@
                     <span class="dev-name-label">${label}</span>
                     <div class="money-val">${d ? d.money.toFixed(2) : '0.00'}€</div>
                     <div class="timer-val">${min.toString().padStart(2,'0')}:${sec.toString().padStart(2,'0')}</div>
-                    <div style="font-size:9px; margin-top:8px; opacity:0.3; font-family:monospace;">${mac}</div>
+                    <div style="font-size:9px; margin-top:8px; opacity:0.3;">${mac}</div>
                 `;
                 container.appendChild(card);
             });
@@ -202,7 +221,6 @@
         function openPop(mac) {
             selectedMac = mac;
             const d = devices[mac];
-            document.getElementById("popTitle").innerText = "GESTIONE MODULO";
             if(d) updatePopupData(d);
             document.getElementById("overlay").style.display = "flex";
         }
@@ -212,9 +230,14 @@
             const sec = Math.floor(d.sec % 60);
             document.getElementById("view-sec").innerText = `${min.toString().padStart(2,'0')}:${sec.toString().padStart(2,'0')}`;
             document.getElementById("view-money").innerText = d.money.toFixed(2) + "€";
-            document.getElementById("view-rssi").innerText = d.rssi + " dBm";
             
-            // Aggiorna input solo se l'utente non sta scrivendo
+            // Visualizza SSID e Pass
+            document.getElementById("view-ssid").innerText = d.wifi_ssid || "N/A";
+            document.getElementById("view-pass").innerText = d.wifi_pass || "N/A";
+
+            // Visualizza indicatore grafico WiFi
+            document.getElementById("wifi-indicator").innerHTML = getWifiIcon(d.rssi) + ` <span style="font-size:12px; margin-left:5px;">${d.rssi} dBm</span>`;
+            
             if(document.activeElement.tagName !== 'INPUT') {
                 document.getElementById("set-dev-name").value = d.dev || "";
                 document.getElementById("set-sec-p").value = d.sec_p;
@@ -231,7 +254,7 @@
                 c_val: parseFloat(document.getElementById("set-c-val").value)
             };
             mqttClient.publish(`cas_system/cmd/${selectedMac}`, JSON.stringify(payload));
-            alert("Impostazioni inviate al dispositivo!");
+            alert("Configurazione salvata!");
         }
 
         function sendCmd(cmd) {
