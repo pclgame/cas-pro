@@ -3,14 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <!-- Meta tag per iPhone -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>C.A.S. SYSTEM PRO</title>
     
-    <!-- Librerie esterne: MQTT e Chart.js per i grafici -->
+    <!-- Libreria MQTT -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mqtt/4.3.7/mqtt.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <style>
         :root { --bg: #0f172a; --card: #1e293b; --accent: #3b82f6; --text: #f8fafc; --online: #10b981; --offline: #ef4444; --border: #334155; --expired: #f87171; }
@@ -22,12 +20,25 @@
         #main-screen { display: none; padding: 20px; }
         header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; border-bottom: 1px solid var(--border); padding-bottom: 15px; }
         
+        /* Sezione Totale Incasso */
+        .total-revenue-box { 
+            background: linear-gradient(135deg, var(--card) 0%, #1e293b 100%);
+            padding: 25px; 
+            border-radius: 20px; 
+            margin-bottom: 25px; 
+            text-align: center; 
+            border: 2px solid var(--accent);
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.2);
+        }
+        .total-label { font-size: 14px; color: var(--accent); font-weight: bold; text-transform: uppercase; letter-spacing: 1px; display: block; margin-bottom: 5px; }
+        .total-amount { font-size: 38px; font-weight: 900; color: var(--text); }
+
         .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 15px; }
         .device-card { background: var(--card); padding: 20px; border-radius: 15px; text-align: center; position: relative; border: 2px solid var(--border); cursor: pointer; transition: 0.3s; }
         .device-card:hover { border-color: var(--accent); }
-        .status-dot { position: absolute; top: 12px; right: 12px; width: 12px; height: 12px; border-radius: 50%; transition: background 0.5s, box-shadow 0.5s; }
+        .status-dot { position: absolute; top: 12px; right: 12px; width: 12px; height: 12px; border-radius: 50%; }
         .online { background: var(--online); box-shadow: 0 0 8px var(--online); }
-        .offline { background: var(--offline); box-shadow: none; }
+        .offline { background: var(--offline); }
         
         .dev-name-label { font-size: 13px; font-weight: bold; color: #94a3b8; margin-bottom: 8px; display: block; text-transform: uppercase; }
         .money-val { font-size: 24px; font-weight: bold; color: var(--accent); margin: 5px 0; }
@@ -46,14 +57,10 @@
         .wifi-bar { width: 4px; border-radius: 1px; background: #475569; }
         
         .btn-cmd { width: 100%; padding: 12px; border-radius: 10px; border: none; font-weight: bold; color: white; cursor: pointer; margin-top: 10px; transition: 0.2s; }
-        .btn-cmd:active { opacity: 0.7; }
         .close-btn { background: #ef4444; color: white; border: none; padding: 10px 20px; border-radius: 8px; width: 100%; margin-top: 20px; cursor: pointer; }
         
         .scadenza-box { font-size: 12px; font-weight: bold; padding: 4px 8px; border-radius: 5px; background: #334155; }
         .logout-btn { background: #ef4444; color: white; border: none; padding: 8px 15px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 12px; }
-
-        /* Stili Grafici */
-        #stats-screen { display: none; background: var(--card); padding: 20px; border-radius: 15px; margin-bottom: 20px; border: 2px solid var(--accent); }
     </style>
 </head>
 <body>
@@ -61,7 +68,7 @@
     <div id="login-screen">
         <div style="background:var(--card); padding:30px; border-radius:20px; width:100%; max-width:320px; border:1px solid var(--border);">
             <h2 style="color:var(--accent); margin-bottom:20px;">C.A.S. SYSTEM</h2>
-            <input type="password" id="pinInput" placeholder="INSERISCI PIN" style="width:100%; text-align:center; font-size:22px; margin-bottom:20px;">
+            <input type="password" id="pinInput" placeholder="PIN" style="width:100%; text-align:center; font-size:22px; margin-bottom:20px;">
             <button onclick="checkLogin()" class="btn-cmd" style="background:var(--accent)">ACCEDI</button>
         </div>
     </div>
@@ -69,8 +76,7 @@
     <div id="expired-screen">
         <h1 style="font-size:60px; margin:0;">⚠️</h1>
         <h2 style="color:var(--expired);">LICENZA SCADUTA</h2>
-        <p style="opacity:0.8;">L'accesso ai dispositivi è stato sospeso.</p>
-        <p id="expiredDateInfo" style="font-weight:bold;"></p>
+        <p id="expiredDateInfo"></p>
         <button onclick="logout()" class="btn-cmd" style="background:var(--border); margin-top:20px; width:auto; padding:10px 30px;">INDIETRO</button>
     </div>
 
@@ -80,31 +86,13 @@
                 <h2 id="clientName" style="margin:0">---</h2>
                 <div id="expiryDisplay" class="scadenza-box" style="margin-top:5px; display:inline-block;">Scadenza: --/--/----</div>
             </div>
-            <div style="display: flex; gap: 10px;">
-                <button onclick="toggleStats()" class="logout-btn" style="background:var(--accent)">STATS</button>
-                <button onclick="logout()" class="logout-btn">LOGOUT</button>
-            </div>
+            <button onclick="logout()" class="logout-btn">LOGOUT</button>
         </header>
 
-        <!-- Sezione Statistiche Guadagni -->
-        <div id="stats-screen">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-                <h3 style="margin:0; color:var(--accent);">Andamento Incassi</h3>
-                <button onclick="toggleStats()" style="background:none; border:none; color:var(--text); font-size:20px; cursor:pointer;">&times;</button>
-            </div>
-            <div style="position: relative; height:200px; width:100%;">
-                <canvas id="revenueChart"></canvas>
-            </div>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px;">
-                <div class="section" style="margin:0; text-align:center;">
-                    <span class="section-title">Totale Sessione</span>
-                    <span id="stat-today" style="font-size:20px; font-weight:bold; color:var(--online);">0.00€</span>
-                </div>
-                <div class="section" style="margin:0; text-align:center;">
-                    <span class="section-title">Media Moduli</span>
-                    <span id="stat-avg" style="font-size:20px; font-weight:bold; color:var(--accent);">0.00€</span>
-                </div>
-            </div>
+        <!-- Box Totale Incasso Unificato -->
+        <div class="total-revenue-box">
+            <span class="total-label">Totale Incasso</span>
+            <div id="grand-total" class="total-amount">0.00€</div>
         </div>
 
         <div class="grid" id="deviceGrid"></div>
@@ -126,16 +114,11 @@
                 <div class="row"><span>Ultimo Segnale:</span> <span id="view-lastseen" style="font-size:12px; opacity:0.6;">--</span></div>
             </div>
             <div class="section">
-                <span class="section-title">Rete Collegata</span>
-                <div class="row"><span>SSID:</span> <span id="view-ssid" style="color:#94a3b8">--</span></div>
-                <div class="row"><span>Password:</span> <span id="view-pass" style="color:#94a3b8">--</span></div>
-            </div>
-            <div class="section">
-                <span class="section-title">Parametri di Lavoro</span>
+                <span class="section-title">Parametri</span>
                 <div class="row"><span>Sec per Scatto:</span><input type="number" id="set-sec-p"></div>
                 <div class="row"><span>Impulsi Minimi:</span><input type="number" id="set-min-i"></div>
                 <div class="row"><span>Valore Scatto €:</span><input type="number" step="0.1" id="set-c-val"></div>
-                <button class="btn-cmd" style="background: #10b981;" onclick="saveParams()">SALVA CONFIGURAZIONE</button>
+                <button class="btn-cmd" style="background: #10b981;" onclick="saveParams()">SALVA</button>
             </div>
             <div class="section">
                 <span class="section-title">Azioni Rapide</span>
@@ -154,8 +137,6 @@
         let devices = {};
         let selectedMac = null;
         let mqttClient = null;
-        let myChart = null;
-        let statsVisible = false;
 
         window.onload = function() {
             const savedPin = localStorage.getItem("cas_saved_pin");
@@ -183,7 +164,7 @@
                     if (providedPin) localStorage.removeItem("cas_saved_pin");
                     else alert("PIN Errato");
                 }
-            } catch(e) { console.error("Database error", e); }
+            } catch(e) {}
         }
 
         function startApp() {
@@ -206,91 +187,29 @@
                 try {
                     const data = JSON.parse(msg.toString());
                     const m = data.mac.toUpperCase();
-                    const now = Math.floor(Date.now() / 1000);
-                    if (now - data.ts > 20) return;
                     if(data.status === "offline") {
                         if(devices[m]) devices[m].forcedOffline = true;
                     } else {
                         devices[m] = { ...data, lastSeen: Date.now(), forcedOffline: false };
                     }
                     renderGrid();
+                    updateGrandTotal();
                     if(selectedMac === m) updatePopupData(devices[m]);
-                    if(statsVisible) calculateStats(); // Aggiorna stats se aperte
                 } catch(e) {}
             });
 
             setInterval(renderGrid, 3000);
         }
 
-        // --- FUNZIONI STATISTICHE ---
-        function toggleStats() {
-            const screen = document.getElementById("stats-screen");
-            statsVisible = !statsVisible;
-            screen.style.display = statsVisible ? "block" : "none";
-            if(statsVisible) {
-                setTimeout(initChart, 100);
-                calculateStats();
-            }
-        }
-
-        function initChart() {
-            const ctx = document.getElementById('revenueChart').getContext('2d');
-            if(myChart) myChart.destroy();
-
-            // Simulazione dati storici per il grafico
-            const labels = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Oggi'];
-            const history = [34.5, 42.0, 28.5, 55.0, 61.2, 88.5, 0]; 
-            
-            // Inseriamo l'incasso reale di oggi
-            let total = 0;
-            Object.values(devices).forEach(d => { if(d.money) total += d.money; });
-            history[6] = total;
-
-            myChart = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: 'Incasso €',
-                        data: history,
-                        borderColor: '#3b82f6',
-                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                        tension: 0.4,
-                        fill: true,
-                        pointRadius: 4
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        y: { grid: { color: '#334155' }, ticks: { color: '#94a3b8' } },
-                        x: { grid: { display: false }, ticks: { color: '#94a3b8' } }
-                    }
-                }
-            });
-        }
-
-        function calculateStats() {
-            let total = 0;
-            let count = 0;
+        function updateGrandTotal() {
+            let grandTotal = 0;
             Object.values(devices).forEach(d => {
-                if(d.money) {
-                    total += d.money;
-                    count++;
-                }
+                const isOnline = d && (Date.now() - d.lastSeen < 12000) && !d.forcedOffline;
+                if(isOnline && d.money) grandTotal += d.money;
             });
-            document.getElementById("stat-today").innerText = total.toFixed(2) + "€";
-            document.getElementById("stat-avg").innerText = count > 0 ? (total / count).toFixed(2) + "€" : "0.00€";
-            
-            if(myChart) {
-                myChart.data.datasets[0].data[6] = total;
-                myChart.update('none');
-            }
+            document.getElementById("grand-total").innerText = grandTotal.toFixed(2) + "€";
         }
 
-        // --- LOGICA GRID E POPUP ---
         function getWifiIcon(rssi) {
             let bars = 0;
             if (rssi > -60) bars = 4;
@@ -324,7 +243,6 @@
                     <span class="dev-name-label">${label}</span>
                     <div class="money-val">${(d && isOnline) ? d.money.toFixed(2) : '---'}€</div>
                     <div class="timer-val">${min.toString().padStart(2,'0')}:${sec.toString().padStart(2,'0')}</div>
-                    <div style="font-size:9px; margin-top:8px; opacity:0.3;">${mac}</div>
                 `;
                 container.appendChild(card);
             });
@@ -342,8 +260,6 @@
             const sec = Math.floor(d.sec % 60);
             document.getElementById("view-sec").innerText = isOnline ? `${min.toString().padStart(2,'0')}:${sec.toString().padStart(2,'0')}` : "--:--";
             document.getElementById("view-money").innerText = isOnline ? d.money.toFixed(2) + "€" : "---€";
-            document.getElementById("view-ssid").innerText = d.wifi_ssid || "N/A";
-            document.getElementById("view-pass").innerText = d.wifi_pass || "N/A";
             document.getElementById("view-lastseen").innerText = isOnline ? "Adesso" : "Ultimo segnale: " + new Date(d.lastSeen).toLocaleTimeString();
             document.getElementById("wifi-indicator").innerHTML = isOnline ? getWifiIcon(d.rssi) : "OFFLINE";
             if(document.activeElement.tagName !== 'INPUT') {
@@ -356,14 +272,13 @@
 
         function saveParams() {
             if(!selectedMac) return;
-            const payload = {
+            mqttClient.publish(`cas_system/cmd/${selectedMac}`, JSON.stringify({
                 dev: document.getElementById("set-dev-name").value,
                 sec_p: parseInt(document.getElementById("set-sec-p").value),
                 min_i: parseInt(document.getElementById("set-min-i").value),
                 c_val: parseFloat(document.getElementById("set-c-val").value)
-            };
-            mqttClient.publish(`cas_system/cmd/${selectedMac}`, JSON.stringify(payload));
-            alert("Configurazione inviata!");
+            }));
+            alert("Salvato!");
         }
 
         function sendCmd(cmd) {
@@ -372,7 +287,7 @@
         }
 
         function logout() {
-            if(confirm("Uscire dal sistema?")) {
+            if(confirm("Uscire?")) {
                 localStorage.removeItem("cas_saved_pin");
                 location.reload();
             }
