@@ -3,11 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <!-- Meta tag per iPhone: rimuove le barre del browser quando salvato sulla Home -->
+    <!-- Meta tag per iPhone -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>C.A.S. SYSTEM PRO</title>
+    
+    <!-- Librerie esterne: MQTT e Chart.js per i grafici -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mqtt/4.3.7/mqtt.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
     <style>
         :root { --bg: #0f172a; --card: #1e293b; --accent: #3b82f6; --text: #f8fafc; --online: #10b981; --offline: #ef4444; --border: #334155; --expired: #f87171; }
         body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 0; }
@@ -46,9 +50,10 @@
         .close-btn { background: #ef4444; color: white; border: none; padding: 10px 20px; border-radius: 8px; width: 100%; margin-top: 20px; cursor: pointer; }
         
         .scadenza-box { font-size: 12px; font-weight: bold; padding: 4px 8px; border-radius: 5px; background: #334155; }
-        
-        /* Stile tasto logout */
         .logout-btn { background: #ef4444; color: white; border: none; padding: 8px 15px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 12px; }
+
+        /* Stili Grafici */
+        #stats-screen { display: none; background: var(--card); padding: 20px; border-radius: 15px; margin-bottom: 20px; border: 2px solid var(--accent); }
     </style>
 </head>
 <body>
@@ -75,12 +80,37 @@
                 <h2 id="clientName" style="margin:0">---</h2>
                 <div id="expiryDisplay" class="scadenza-box" style="margin-top:5px; display:inline-block;">Scadenza: --/--/----</div>
             </div>
-            <button onclick="logout()" class="logout-btn">LOGOUT</button>
+            <div style="display: flex; gap: 10px;">
+                <button onclick="toggleStats()" class="logout-btn" style="background:var(--accent)">STATS</button>
+                <button onclick="logout()" class="logout-btn">LOGOUT</button>
+            </div>
         </header>
+
+        <!-- Sezione Statistiche Guadagni -->
+        <div id="stats-screen">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                <h3 style="margin:0; color:var(--accent);">Andamento Incassi</h3>
+                <button onclick="toggleStats()" style="background:none; border:none; color:var(--text); font-size:20px; cursor:pointer;">&times;</button>
+            </div>
+            <div style="position: relative; height:200px; width:100%;">
+                <canvas id="revenueChart"></canvas>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px;">
+                <div class="section" style="margin:0; text-align:center;">
+                    <span class="section-title">Totale Sessione</span>
+                    <span id="stat-today" style="font-size:20px; font-weight:bold; color:var(--online);">0.00€</span>
+                </div>
+                <div class="section" style="margin:0; text-align:center;">
+                    <span class="section-title">Media Moduli</span>
+                    <span id="stat-avg" style="font-size:20px; font-weight:bold; color:var(--accent);">0.00€</span>
+                </div>
+            </div>
+        </div>
+
         <div class="grid" id="deviceGrid"></div>
     </div>
 
-    <!-- Overlay e Popup rimangono invariati -->
+    <!-- Overlay Popup Modulo -->
     <div id="overlay">
         <div class="popup">
             <h2 id="popTitle" style="margin-top:0; color:var(--accent);">MODULO</h2>
@@ -120,8 +150,235 @@
     </div>
 
     <script>
-        
-        const _0x4ee66c=_0x1800;function _0x39f4(){const _0x2655c8=['Scaduta\x20il:\x20','MODULO\x20','scadenza','Scadenza:\x20','status','forEach','100RpRFgs','parse','overlay','nome','online','</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20style=\x22font-size:9px;\x20margin-top:8px;\x20opacity:0.3;\x22>','wifi-indicator','sec_p','getItem','set-min-i','cas_system/cmd/','907832oCNPdF','20268iuGpvb','database_clienti.json?v=','block','floor','stringify','appendChild','tagName','\x20<span\x20style=\x22font-size:12px;\x20margin-left:5px;\x22>','clientName','getElementById','dev','none','subscribe','now','view-money','error','mac','login-screen','#475569','div','var(--offline)','view-ssid','createElement','1352606VqlcUT','var(--online)','lastSeen','834736NmrPnr','message','4KLwAbM','set-sec-p','view-sec','wss://4c3d155d119d45b48f9a1d88d1963d9a.s1.eu.hivemq.cloud:8884/mqtt','<div\x20class=\x22wifi-bar-container\x22>','---€','json','38814tFbYUh','publish','\x20dBm</span>','c_val','\x22></div>','removeItem','cas_system/status/','px;\x20background:','4527507oBTioj','toFixed','display','</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20','style','expired-screen','trim','main-screen','</span>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22money-val\x22>','value','innerText','CAS_gate_2026!#','activeElement','setItem','substr','wifi_pass','135ZUBMlA','rssi','admin_cas_system','€</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22timer-val\x22>','expiryDisplay','padStart','Adesso','connect','Ultimo\x20segnale:\x20','money','N/A','set-c-val','reload','toUpperCase','Vuoi\x20davvero\x20uscire?\x20Dovrai\x20reinserire\x20il\x20PIN.','cas_saved_pin','toString','WEB_','className','sec','DISCONNESSO','toLocaleDateString','it-IT','---','flex','Configurazione\x20inviata!','6072346YwKSzQ','PIN\x20Errato','set-dev-name','onload','forcedOffline'];_0x39f4=function(){return _0x2655c8;};return _0x39f4();}(function(_0x4e5811,_0x530206){const _0x4c3716=_0x1800,_0x383acd=_0x4e5811();while(!![]){try{const _0x10b905=parseInt(_0x4c3716(0x140))/0x1+parseInt(_0x4c3716(0x143))/0x2+parseInt(_0x4c3716(0x154))/0x3*(-parseInt(_0x4c3716(0x145))/0x4)+parseInt(_0x4c3716(0x164))/0x5*(-parseInt(_0x4c3716(0x14c))/0x6)+parseInt(_0x4c3716(0x17e))/0x7+-parseInt(_0x4c3716(0x128))/0x8+-parseInt(_0x4c3716(0x129))/0x9*(parseInt(_0x4c3716(0x11d))/0xa);if(_0x10b905===_0x530206)break;else _0x383acd['push'](_0x383acd['shift']());}catch(_0x5d46b2){_0x383acd['push'](_0x383acd['shift']());}}}(_0x39f4,0xc79d5));let currentUser=null,devices={},selectedMac=null,mqttClient=null;window[_0x4ee66c(0x181)]=function(){const _0x23bc94=_0x4ee66c,_0x1f7fa1=localStorage[_0x23bc94(0x125)]('cas_saved_pin');_0x1f7fa1&&checkLogin(_0x1f7fa1);};async function checkLogin(_0x27da55=null){const _0x182f53=_0x4ee66c,_0x454016=_0x27da55||document[_0x182f53(0x132)]('pinInput')[_0x182f53(0x15d)];try{const _0x18100c=await fetch(_0x182f53(0x12a)+Date[_0x182f53(0x136)]()),_0x1aa0e4=await _0x18100c[_0x182f53(0x14b)]();if(_0x1aa0e4[_0x454016]){if(!_0x27da55)localStorage[_0x182f53(0x161)]('cas_saved_pin',_0x454016);currentUser=_0x1aa0e4[_0x454016];const _0x5b74a2=new Date(),_0x544f01=new Date(currentUser[_0x182f53(0x119)]);_0x5b74a2>_0x544f01?(document[_0x182f53(0x132)](_0x182f53(0x13a))['style']['display']='none',document['getElementById'](_0x182f53(0x159))[_0x182f53(0x158)][_0x182f53(0x156)]=_0x182f53(0x17c),document[_0x182f53(0x132)]('expiredDateInfo')[_0x182f53(0x15e)]=_0x182f53(0x183)+_0x544f01[_0x182f53(0x179)](_0x182f53(0x17a))):startApp();}else _0x27da55?localStorage[_0x182f53(0x151)](_0x182f53(0x173)):alert(_0x182f53(0x17f));}catch(_0x575455){console[_0x182f53(0x138)]('Errore\x20connessione',_0x575455);}}function _0x1800(_0x3e8d60,_0x3d9df4){_0x3e8d60=_0x3e8d60-0x119;const _0x39f4d6=_0x39f4();let _0x180077=_0x39f4d6[_0x3e8d60];return _0x180077;}function logout(){const _0x3c37ac=_0x4ee66c;confirm(_0x3c37ac(0x172))&&(localStorage['removeItem']('cas_saved_pin'),location[_0x3c37ac(0x170)]());}function startApp(){const _0x2f3012=_0x4ee66c;document['getElementById'](_0x2f3012(0x13a))[_0x2f3012(0x158)][_0x2f3012(0x156)]=_0x2f3012(0x134),document[_0x2f3012(0x132)](_0x2f3012(0x15b))[_0x2f3012(0x158)][_0x2f3012(0x156)]=_0x2f3012(0x12b),document[_0x2f3012(0x132)](_0x2f3012(0x131))[_0x2f3012(0x15e)]=currentUser[_0x2f3012(0x120)],document[_0x2f3012(0x132)](_0x2f3012(0x168))[_0x2f3012(0x15e)]=_0x2f3012(0x11a)+new Date(currentUser['scadenza'])[_0x2f3012(0x179)](_0x2f3012(0x17a)),mqttClient=mqtt['connect'](_0x2f3012(0x148),{'username':_0x2f3012(0x166),'password':_0x2f3012(0x15f),'clientId':_0x2f3012(0x175)+Math['random']()[_0x2f3012(0x174)](0x10)[_0x2f3012(0x162)](0x2,0x5)}),mqttClient['on'](_0x2f3012(0x16b),()=>{const _0x27966a=_0x2f3012;currentUser[_0x27966a(0x139)][_0x27966a(0x11c)](_0x320fbd=>mqttClient[_0x27966a(0x135)](_0x27966a(0x152)+_0x320fbd[_0x27966a(0x15a)]()[_0x27966a(0x171)]()));}),mqttClient['on'](_0x2f3012(0x144),(_0x26cfc4,_0x3b1257)=>{const _0x2b1329=_0x2f3012;try{const _0x3f31d6=JSON[_0x2b1329(0x11e)](_0x3b1257[_0x2b1329(0x174)]()),_0x36dc3a=_0x3f31d6['mac'][_0x2b1329(0x171)](),_0x2470db=Math[_0x2b1329(0x12c)](Date[_0x2b1329(0x136)]()/0x3e8),_0x149be3=_0x3f31d6['ts'];if(_0x2470db-_0x149be3>0x14)return;if(_0x3f31d6[_0x2b1329(0x11b)]==='offline'){if(devices[_0x36dc3a])devices[_0x36dc3a][_0x2b1329(0x182)]=!![];}else devices[_0x36dc3a]={..._0x3f31d6,'lastSeen':Date[_0x2b1329(0x136)](),'forcedOffline':![]};renderGrid();if(selectedMac===_0x36dc3a)updatePopupData(devices[_0x36dc3a]);}catch(_0x901ab){console['error']('Errore\x20ricezione',_0x901ab);}}),setInterval(renderGrid,0x7d0);}function getWifiIcon(_0x3216a9){const _0x318d68=_0x4ee66c;let _0x10bba7=0x0;if(_0x3216a9>-0x3c)_0x10bba7=0x4;else{if(_0x3216a9>-0x46)_0x10bba7=0x3;else{if(_0x3216a9>-0x50)_0x10bba7=0x2;else{if(_0x3216a9>-0x5a)_0x10bba7=0x1;}}}let _0xfde35d=_0x318d68(0x149);for(let _0x1dabbc=0x1;_0x1dabbc<=0x4;_0x1dabbc++){let _0x1b5c81=_0x1dabbc<=_0x10bba7?_0x318d68(0x141):_0x318d68(0x13b);if(_0x10bba7===0x1&&_0x1dabbc===0x1)_0x1b5c81=_0x318d68(0x13d);_0xfde35d+='<div\x20class=\x22wifi-bar\x22\x20style=\x22height:'+_0x1dabbc*0x4+_0x318d68(0x153)+_0x1b5c81+_0x318d68(0x150);}return _0xfde35d+='</div>',_0xfde35d;}function renderGrid(){const _0x3f1858=_0x4ee66c,_0x5af4d5=document[_0x3f1858(0x132)]('deviceGrid');if(!_0x5af4d5)return;_0x5af4d5['innerHTML']='',currentUser['mac'][_0x3f1858(0x11c)](_0x197cd9=>{const _0x702f7e=_0x3f1858,_0x2a8412=_0x197cd9[_0x702f7e(0x15a)]()[_0x702f7e(0x171)](),_0x2abd20=devices[_0x2a8412],_0x2b7aa2=_0x2abd20&&Date[_0x702f7e(0x136)]()-_0x2abd20[_0x702f7e(0x142)]<0x2ee0&&!_0x2abd20[_0x702f7e(0x182)],_0x55eb4a=_0x2abd20&&_0x2abd20[_0x702f7e(0x133)]&&_0x2abd20[_0x702f7e(0x133)]!==''?_0x2abd20[_0x702f7e(0x133)]:_0x702f7e(0x184)+_0x2a8412['slice'](-0x5),_0x1f8a57=document[_0x702f7e(0x13f)](_0x702f7e(0x13c));_0x1f8a57[_0x702f7e(0x176)]='device-card',_0x1f8a57['onclick']=()=>openPop(_0x2a8412);const _0x170dcc=_0x2abd20&&_0x2b7aa2?Math[_0x702f7e(0x12c)](_0x2abd20[_0x702f7e(0x177)]/0x3c):0x0,_0x53485e=_0x2abd20&&_0x2b7aa2?Math[_0x702f7e(0x12c)](_0x2abd20['sec']%0x3c):0x0;_0x1f8a57['innerHTML']='\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22status-dot\x20'+(_0x2b7aa2?_0x702f7e(0x121):'offline')+'\x22></div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<span\x20class=\x22dev-name-label\x22>'+_0x55eb4a+_0x702f7e(0x15c)+(_0x2abd20&&_0x2b7aa2?_0x2abd20[_0x702f7e(0x16d)][_0x702f7e(0x155)](0x2):_0x702f7e(0x17b))+_0x702f7e(0x167)+_0x170dcc['toString']()[_0x702f7e(0x169)](0x2,'0')+':'+_0x53485e[_0x702f7e(0x174)]()['padStart'](0x2,'0')+_0x702f7e(0x122)+_0x2a8412+_0x702f7e(0x157),_0x5af4d5[_0x702f7e(0x12e)](_0x1f8a57);});}function openPop(_0x12d84a){const _0x2f03af=_0x4ee66c;selectedMac=_0x12d84a;const _0x2a732b=devices[_0x12d84a];if(_0x2a732b)updatePopupData(_0x2a732b);document[_0x2f03af(0x132)](_0x2f03af(0x11f))['style'][_0x2f03af(0x156)]=_0x2f03af(0x17c);}function updatePopupData(_0xa7a48a){const _0x84e9bc=_0x4ee66c,_0x2e9760=_0xa7a48a&&Date[_0x84e9bc(0x136)]()-_0xa7a48a[_0x84e9bc(0x142)]<0x2ee0&&!_0xa7a48a[_0x84e9bc(0x182)],_0x3d01cf=Math[_0x84e9bc(0x12c)](_0xa7a48a[_0x84e9bc(0x177)]/0x3c),_0x3c2afe=Math[_0x84e9bc(0x12c)](_0xa7a48a[_0x84e9bc(0x177)]%0x3c);document[_0x84e9bc(0x132)](_0x84e9bc(0x147))[_0x84e9bc(0x15e)]=_0x2e9760?_0x3d01cf[_0x84e9bc(0x174)]()[_0x84e9bc(0x169)](0x2,'0')+':'+_0x3c2afe['toString']()['padStart'](0x2,'0'):'--:--',document[_0x84e9bc(0x132)](_0x84e9bc(0x137))['innerText']=_0x2e9760?_0xa7a48a[_0x84e9bc(0x16d)][_0x84e9bc(0x155)](0x2)+'€':_0x84e9bc(0x14a),document[_0x84e9bc(0x132)](_0x84e9bc(0x13e))['innerText']=_0xa7a48a['wifi_ssid']||_0x84e9bc(0x16e),document[_0x84e9bc(0x132)]('view-pass')[_0x84e9bc(0x15e)]=_0xa7a48a[_0x84e9bc(0x163)]||'N/A';const _0x37c3a4=_0xa7a48a?new Date(_0xa7a48a[_0x84e9bc(0x142)])['toLocaleTimeString']():'--';document['getElementById']('view-lastseen')[_0x84e9bc(0x15e)]=_0x2e9760?_0x84e9bc(0x16a):_0x84e9bc(0x16c)+_0x37c3a4,document[_0x84e9bc(0x132)](_0x84e9bc(0x123))['innerHTML']=_0x2e9760?getWifiIcon(_0xa7a48a[_0x84e9bc(0x165)])+(_0x84e9bc(0x130)+_0xa7a48a['rssi']+_0x84e9bc(0x14e)):_0x84e9bc(0x178),document[_0x84e9bc(0x160)][_0x84e9bc(0x12f)]!=='INPUT'&&_0xa7a48a&&(document[_0x84e9bc(0x132)](_0x84e9bc(0x180))['value']=_0xa7a48a['dev']||'',document[_0x84e9bc(0x132)]('set-sec-p')[_0x84e9bc(0x15d)]=_0xa7a48a[_0x84e9bc(0x124)],document[_0x84e9bc(0x132)](_0x84e9bc(0x126))[_0x84e9bc(0x15d)]=_0xa7a48a['min_i'],document['getElementById'](_0x84e9bc(0x16f))[_0x84e9bc(0x15d)]=_0xa7a48a[_0x84e9bc(0x14f)]);}function saveParams(){const _0x1f1678=_0x4ee66c;if(!selectedMac)return;const _0x4a6b79={'dev':document[_0x1f1678(0x132)]('set-dev-name')[_0x1f1678(0x15d)],'sec_p':parseInt(document[_0x1f1678(0x132)](_0x1f1678(0x146))[_0x1f1678(0x15d)]),'min_i':parseInt(document[_0x1f1678(0x132)](_0x1f1678(0x126))[_0x1f1678(0x15d)]),'c_val':parseFloat(document[_0x1f1678(0x132)](_0x1f1678(0x16f))['value'])};mqttClient[_0x1f1678(0x14d)](_0x1f1678(0x127)+selectedMac,JSON[_0x1f1678(0x12d)](_0x4a6b79)),alert(_0x1f1678(0x17d));}function sendCmd(_0x2fa631){const _0x596698=_0x4ee66c;if(!selectedMac)return;mqttClient[_0x596698(0x14d)](_0x596698(0x127)+selectedMac,JSON[_0x596698(0x12d)]({'cmd':_0x2fa631}));}function closePop(){const _0x4f2e5e=_0x4ee66c;document['getElementById'](_0x4f2e5e(0x11f))[_0x4f2e5e(0x158)][_0x4f2e5e(0x156)]=_0x4f2e5e(0x134),selectedMac=null;}
+        let currentUser = null;
+        let devices = {};
+        let selectedMac = null;
+        let mqttClient = null;
+        let myChart = null;
+        let statsVisible = false;
+
+        window.onload = function() {
+            const savedPin = localStorage.getItem("cas_saved_pin");
+            if (savedPin) checkLogin(savedPin);
+        };
+
+        async function checkLogin(providedPin = null) {
+            const pin = providedPin || document.getElementById("pinInput").value;
+            try {
+                const r = await fetch(`database_clienti.json?v=${Date.now()}`);
+                const db = await r.json();
+                if (db[pin]) {
+                    if (!providedPin) localStorage.setItem("cas_saved_pin", pin);
+                    currentUser = db[pin];
+                    const today = new Date();
+                    const exp = new Date(currentUser.scadenza);
+                    if (today > exp) {
+                        document.getElementById("login-screen").style.display = "none";
+                        document.getElementById("expired-screen").style.display = "flex";
+                        document.getElementById("expiredDateInfo").innerText = "Scaduta il: " + exp.toLocaleDateString('it-IT');
+                    } else {
+                        startApp();
+                    }
+                } else {
+                    if (providedPin) localStorage.removeItem("cas_saved_pin");
+                    else alert("PIN Errato");
+                }
+            } catch(e) { console.error("Database error", e); }
+        }
+
+        function startApp() {
+            document.getElementById("login-screen").style.display = "none";
+            document.getElementById("main-screen").style.display = "block";
+            document.getElementById("clientName").innerText = currentUser.nome;
+            document.getElementById("expiryDisplay").innerText = "Scadenza: " + new Date(currentUser.scadenza).toLocaleDateString('it-IT');
+
+            mqttClient = mqtt.connect('wss://4c3d155d119d45b48f9a1d88d1963d9a.s1.eu.hivemq.cloud:8884/mqtt', {
+                username: 'admin_cas_system',
+                password: 'CAS_gate_2026!#',
+                clientId: 'WEB_' + Math.random().toString(16).substr(2, 5)
+            });
+
+            mqttClient.on('connect', () => {
+                currentUser.mac.forEach(m => mqttClient.subscribe(`cas_system/status/${m.trim().toUpperCase()}`));
+            });
+
+            mqttClient.on('message', (topic, msg) => {
+                try {
+                    const data = JSON.parse(msg.toString());
+                    const m = data.mac.toUpperCase();
+                    const now = Math.floor(Date.now() / 1000);
+                    if (now - data.ts > 20) return;
+                    if(data.status === "offline") {
+                        if(devices[m]) devices[m].forcedOffline = true;
+                    } else {
+                        devices[m] = { ...data, lastSeen: Date.now(), forcedOffline: false };
+                    }
+                    renderGrid();
+                    if(selectedMac === m) updatePopupData(devices[m]);
+                    if(statsVisible) calculateStats(); // Aggiorna stats se aperte
+                } catch(e) {}
+            });
+
+            setInterval(renderGrid, 3000);
+        }
+
+        // --- FUNZIONI STATISTICHE ---
+        function toggleStats() {
+            const screen = document.getElementById("stats-screen");
+            statsVisible = !statsVisible;
+            screen.style.display = statsVisible ? "block" : "none";
+            if(statsVisible) {
+                setTimeout(initChart, 100);
+                calculateStats();
+            }
+        }
+
+        function initChart() {
+            const ctx = document.getElementById('revenueChart').getContext('2d');
+            if(myChart) myChart.destroy();
+
+            // Simulazione dati storici per il grafico
+            const labels = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Oggi'];
+            const history = [34.5, 42.0, 28.5, 55.0, 61.2, 88.5, 0]; 
+            
+            // Inseriamo l'incasso reale di oggi
+            let total = 0;
+            Object.values(devices).forEach(d => { if(d.money) total += d.money; });
+            history[6] = total;
+
+            myChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Incasso €',
+                        data: history,
+                        borderColor: '#3b82f6',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        tension: 0.4,
+                        fill: true,
+                        pointRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { grid: { color: '#334155' }, ticks: { color: '#94a3b8' } },
+                        x: { grid: { display: false }, ticks: { color: '#94a3b8' } }
+                    }
+                }
+            });
+        }
+
+        function calculateStats() {
+            let total = 0;
+            let count = 0;
+            Object.values(devices).forEach(d => {
+                if(d.money) {
+                    total += d.money;
+                    count++;
+                }
+            });
+            document.getElementById("stat-today").innerText = total.toFixed(2) + "€";
+            document.getElementById("stat-avg").innerText = count > 0 ? (total / count).toFixed(2) + "€" : "0.00€";
+            
+            if(myChart) {
+                myChart.data.datasets[0].data[6] = total;
+                myChart.update('none');
+            }
+        }
+
+        // --- LOGICA GRID E POPUP ---
+        function getWifiIcon(rssi) {
+            let bars = 0;
+            if (rssi > -60) bars = 4;
+            else if (rssi > -70) bars = 3;
+            else if (rssi > -80) bars = 2;
+            else if (rssi > -90) bars = 1;
+            let html = '<div class="wifi-bar-container">';
+            for(let i=1; i<=4; i++) {
+                let color = i <= bars ? 'var(--online)' : '#475569';
+                html += `<div class="wifi-bar" style="height:${i*4}px; background:${color}"></div>`;
+            }
+            return html + '</div>';
+        }
+
+        function renderGrid() {
+            const container = document.getElementById("deviceGrid");
+            if (!container) return;
+            container.innerHTML = "";
+            currentUser.mac.forEach(m => {
+                const mac = m.trim().toUpperCase();
+                const d = devices[mac];
+                const isOnline = d && (Date.now() - d.lastSeen < 12000) && !d.forcedOffline;
+                const label = (d && d.dev) ? d.dev : "MODULO " + mac.slice(-5);
+                const card = document.createElement("div");
+                card.className = "device-card";
+                card.onclick = () => openPop(mac);
+                const min = (d && isOnline) ? Math.floor(d.sec / 60) : 0;
+                const sec = (d && isOnline) ? Math.floor(d.sec % 60) : 0;
+                card.innerHTML = `
+                    <div class="status-dot ${isOnline ? 'online' : 'offline'}"></div>
+                    <span class="dev-name-label">${label}</span>
+                    <div class="money-val">${(d && isOnline) ? d.money.toFixed(2) : '---'}€</div>
+                    <div class="timer-val">${min.toString().padStart(2,'0')}:${sec.toString().padStart(2,'0')}</div>
+                    <div style="font-size:9px; margin-top:8px; opacity:0.3;">${mac}</div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function openPop(mac) {
+            selectedMac = mac;
+            if(devices[mac]) updatePopupData(devices[mac]);
+            document.getElementById("overlay").style.display = "flex";
+        }
+
+        function updatePopupData(d) {
+            const isOnline = d && (Date.now() - d.lastSeen < 12000) && !d.forcedOffline;
+            const min = Math.floor(d.sec / 60);
+            const sec = Math.floor(d.sec % 60);
+            document.getElementById("view-sec").innerText = isOnline ? `${min.toString().padStart(2,'0')}:${sec.toString().padStart(2,'0')}` : "--:--";
+            document.getElementById("view-money").innerText = isOnline ? d.money.toFixed(2) + "€" : "---€";
+            document.getElementById("view-ssid").innerText = d.wifi_ssid || "N/A";
+            document.getElementById("view-pass").innerText = d.wifi_pass || "N/A";
+            document.getElementById("view-lastseen").innerText = isOnline ? "Adesso" : "Ultimo segnale: " + new Date(d.lastSeen).toLocaleTimeString();
+            document.getElementById("wifi-indicator").innerHTML = isOnline ? getWifiIcon(d.rssi) : "OFFLINE";
+            if(document.activeElement.tagName !== 'INPUT') {
+                document.getElementById("set-dev-name").value = d.dev || "";
+                document.getElementById("set-sec-p").value = d.sec_p;
+                document.getElementById("set-min-i").value = d.min_i;
+                document.getElementById("set-c-val").value = d.c_val;
+            }
+        }
+
+        function saveParams() {
+            if(!selectedMac) return;
+            const payload = {
+                dev: document.getElementById("set-dev-name").value,
+                sec_p: parseInt(document.getElementById("set-sec-p").value),
+                min_i: parseInt(document.getElementById("set-min-i").value),
+                c_val: parseFloat(document.getElementById("set-c-val").value)
+            };
+            mqttClient.publish(`cas_system/cmd/${selectedMac}`, JSON.stringify(payload));
+            alert("Configurazione inviata!");
+        }
+
+        function sendCmd(cmd) {
+            if(!selectedMac) return;
+            mqttClient.publish(`cas_system/cmd/${selectedMac}`, JSON.stringify({ cmd: cmd }));
+        }
+
+        function logout() {
+            if(confirm("Uscire dal sistema?")) {
+                localStorage.removeItem("cas_saved_pin");
+                location.reload();
+            }
+        }
+
+        function closePop() { document.getElementById("overlay").style.display = "none"; selectedMac = null; }
     </script>
 </body>
 </html>
