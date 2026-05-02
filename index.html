@@ -3,6 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <!-- Meta tag per iPhone: rimuove le barre del browser quando salvato sulla Home -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>C.A.S. SYSTEM PRO</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mqtt/4.3.7/mqtt.min.js"></script>
     <style>
@@ -43,6 +46,9 @@
         .close-btn { background: #ef4444; color: white; border: none; padding: 10px 20px; border-radius: 8px; width: 100%; margin-top: 20px; cursor: pointer; }
         
         .scadenza-box { font-size: 12px; font-weight: bold; padding: 4px 8px; border-radius: 5px; background: #334155; }
+        
+        /* Stile tasto logout */
+        .logout-btn { background: #ef4444; color: white; border: none; padding: 8px 15px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 12px; }
     </style>
 </head>
 <body>
@@ -60,7 +66,7 @@
         <h2 style="color:var(--expired);">LICENZA SCADUTA</h2>
         <p style="opacity:0.8;">L'accesso ai dispositivi è stato sospeso.</p>
         <p id="expiredDateInfo" style="font-weight:bold;"></p>
-        <button onclick="location.reload()" class="btn-cmd" style="background:var(--border); margin-top:20px; width:auto; padding:10px 30px;">INDIETRO</button>
+        <button onclick="logout()" class="btn-cmd" style="background:var(--border); margin-top:20px; width:auto; padding:10px 30px;">INDIETRO</button>
     </div>
 
     <div id="main-screen">
@@ -69,40 +75,31 @@
                 <h2 id="clientName" style="margin:0">---</h2>
                 <div id="expiryDisplay" class="scadenza-box" style="margin-top:5px; display:inline-block;">Scadenza: --/--/----</div>
             </div>
-            <button onclick="location.reload()" style="background:var(--border); color:white; border:none; padding:10px; border-radius:8px; cursor:pointer;">Esci</button>
+            <button onclick="logout()" class="logout-btn">LOGOUT</button>
         </header>
         <div class="grid" id="deviceGrid"></div>
     </div>
 
+    <!-- Overlay e Popup rimangono invariati -->
     <div id="overlay">
         <div class="popup">
             <h2 id="popTitle" style="margin-top:0; color:var(--accent);">MODULO</h2>
-            
             <div class="section">
                 <span class="section-title">Identificazione</span>
-                <div class="row">
-                    <span>Nome Modulo:</span>
-                    <input type="text" id="set-dev-name" class="wide">
-                </div>
+                <div class="row"><span>Nome Modulo:</span><input type="text" id="set-dev-name" class="wide"></div>
             </div>
-
             <div class="section">
                 <span class="section-title">Stato Attuale</span>
                 <div class="row"><span>Tempo Attivo:</span> <span id="view-sec" class="timer-val">00:00</span></div>
                 <div class="row"><span>Incasso:</span> <span id="view-money">0.00€</span></div>
-                <div class="row">
-                    <span>Qualità Segnale:</span> 
-                    <div id="wifi-indicator" class="wifi-bar-container"></div>
-                </div>
+                <div class="row"><span>Qualità Segnale:</span><div id="wifi-indicator" class="wifi-bar-container"></div></div>
                 <div class="row"><span>Ultimo Segnale:</span> <span id="view-lastseen" style="font-size:12px; opacity:0.6;">--</span></div>
             </div>
-
             <div class="section">
                 <span class="section-title">Rete Collegata</span>
                 <div class="row"><span>SSID:</span> <span id="view-ssid" style="color:#94a3b8">--</span></div>
                 <div class="row"><span>Password:</span> <span id="view-pass" style="color:#94a3b8">--</span></div>
             </div>
-
             <div class="section">
                 <span class="section-title">Parametri di Lavoro</span>
                 <div class="row"><span>Sec per Scatto:</span><input type="number" id="set-sec-p"></div>
@@ -110,7 +107,6 @@
                 <div class="row"><span>Valore Scatto €:</span><input type="number" step="0.1" id="set-c-val"></div>
                 <button class="btn-cmd" style="background: #10b981;" onclick="saveParams()">SALVA CONFIGURAZIONE</button>
             </div>
-
             <div class="section">
                 <span class="section-title">Azioni Rapide</span>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
@@ -119,7 +115,6 @@
                 </div>
                 <button class="btn-cmd" style="background:#475569" onclick="sendCmd('RESET_TOTAL')">AZZERA CONTATORE</button>
             </div>
-            
             <button class="close-btn" onclick="closePop()">CHIUDI</button>
         </div>
     </div>
@@ -130,24 +125,58 @@
         let selectedMac = null;
         let mqttClient = null;
 
-        async function checkLogin() {
-            const pin = document.getElementById("pinInput").value;
+        // --- CONTROLLO AUTO-LOGIN ALL'AVVIO ---
+        window.onload = function() {
+            const savedPin = localStorage.getItem("cas_saved_pin");
+            if (savedPin) {
+                console.log("PIN trovato, tentativo di login automatico...");
+                checkLogin(savedPin);
+            }
+        };
+
+        async function checkLogin(providedPin = null) {
+            const pin = providedPin || document.getElementById("pinInput").value;
+            
             try {
                 const r = await fetch(`database_clienti.json?v=${Date.now()}`);
                 const db = await r.json();
+                
                 if (db[pin]) { 
+                    // Salva il PIN se il login è manuale
+                    if (!providedPin) localStorage.setItem("cas_saved_pin", pin);
+                    
                     currentUser = db[pin];
                     const today = new Date();
                     const exp = new Date(currentUser.scadenza);
+                    
                     if (today > exp) {
                         document.getElementById("login-screen").style.display = "none";
                         document.getElementById("expired-screen").style.display = "flex";
                         document.getElementById("expiredDateInfo").innerText = "Scaduta il: " + exp.toLocaleDateString('it-IT');
-                    } else { startApp(); }
-                } else { alert("PIN Errato"); }
-            } catch(e) { alert("Errore connessione"); }
+                    } else { 
+                        startApp(); 
+                    }
+                } else { 
+                    if (providedPin) {
+                        localStorage.removeItem("cas_saved_pin"); // Rimuovi se il PIN salvato non è più valido
+                    } else {
+                        alert("PIN Errato"); 
+                    }
+                }
+            } catch(e) { 
+                console.error("Errore connessione", e);
+                if(!providedPin) alert("Errore connessione al database"); 
+            }
         }
 
+        function logout() {
+            if(confirm("Vuoi davvero uscire? Dovrai reinserire il PIN.")) {
+                localStorage.removeItem("cas_saved_pin"); // Cancella la memoria
+                location.reload(); // Ricarica la pagina tornando al login
+            }
+        }
+
+        // --- LOGICA MQTT E GRID (Invariata) ---
         function startApp() {
             document.getElementById("login-screen").style.display = "none";
             document.getElementById("main-screen").style.display = "block";
@@ -168,18 +197,11 @@
                 try {
                     const data = JSON.parse(msg.toString());
                     const m = data.mac.toUpperCase();
-                    
-                    // --- LOGICA FILTRO TIMESTAMP (Ignora i messaggi RETAINED vecchi) ---
                     const oraAttuale = Math.floor(Date.now() / 1000);
                     const oraMessaggio = data.ts; 
                     
-                    // Se il messaggio è più vecchio di 20 secondi rispetto all'ora del browser, lo scartiamo
-                    if (oraAttuale - oraMessaggio > 20) {
-                        console.log("Scartato messaggio vecchio di: " + m);
-                        return; 
-                    }
+                    if (oraAttuale - oraMessaggio > 20) return; 
 
-                    // Gestione offline esplicito (Last Will)
                     if(data.status === "offline") {
                         if(devices[m]) devices[m].forcedOffline = true;
                     } else {
@@ -191,17 +213,16 @@
                 } catch(e) { console.error("Errore ricezione", e); }
             });
 
-            // Watchdog ogni 2 secondi per aggiornare i pallini rosso/verde
             setInterval(renderGrid, 2000);
         }
 
+        // ... Tutte le altre funzioni (getWifiIcon, renderGrid, openPop, updatePopupData, saveParams, sendCmd, closePop) rimangono identiche ...
         function getWifiIcon(rssi) {
             let bars = 0;
             if (rssi > -60) bars = 4;
             else if (rssi > -70) bars = 3;
             else if (rssi > -80) bars = 2;
             else if (rssi > -90) bars = 1;
-            
             let html = '<div class="wifi-bar-container">';
             for(let i=1; i<=4; i++) {
                 let color = i <= bars ? 'var(--online)' : '#475569';
@@ -215,23 +236,17 @@
         function renderGrid() {
             const container = document.getElementById("deviceGrid");
             if (!container) return;
-            
             container.innerHTML = "";
             currentUser.mac.forEach(m => {
                 const mac = m.trim().toUpperCase();
                 const d = devices[mac];
-                
-                // Un modulo è online solo se il dato è fresco (< 12 secondi)
                 const isOnline = d && (Date.now() - d.lastSeen < 12000) && !d.forcedOffline;
-
                 const label = (d && d.dev && d.dev !== "") ? d.dev : "MODULO " + mac.slice(-5);
                 const card = document.createElement("div");
                 card.className = "device-card";
                 card.onclick = () => openPop(mac);
-                
                 const min = (d && isOnline) ? Math.floor(d.sec / 60) : 0;
                 const sec = (d && isOnline) ? Math.floor(d.sec % 60) : 0;
-
                 card.innerHTML = `
                     <div class="status-dot ${isOnline ? 'online' : 'offline'}"></div>
                     <span class="dev-name-label">${label}</span>
@@ -252,20 +267,15 @@
 
         function updatePopupData(d) {
             const isOnline = d && (Date.now() - d.lastSeen < 12000) && !d.forcedOffline;
-            
             const min = Math.floor(d.sec / 60);
             const sec = Math.floor(d.sec % 60);
             document.getElementById("view-sec").innerText = isOnline ? `${min.toString().padStart(2,'0')}:${sec.toString().padStart(2,'0')}` : "--:--";
             document.getElementById("view-money").innerText = isOnline ? d.money.toFixed(2) + "€" : "---€";
-            
             document.getElementById("view-ssid").innerText = d.wifi_ssid || "N/A";
             document.getElementById("view-pass").innerText = d.wifi_pass || "N/A";
-            
             const lastDate = d ? new Date(d.lastSeen).toLocaleTimeString() : "--";
             document.getElementById("view-lastseen").innerText = isOnline ? "Adesso" : "Ultimo segnale: " + lastDate;
-
             document.getElementById("wifi-indicator").innerHTML = isOnline ? getWifiIcon(d.rssi) + ` <span style="font-size:12px; margin-left:5px;">${d.rssi} dBm</span>` : "DISCONNESSO";
-            
             if(document.activeElement.tagName !== 'INPUT' && d) {
                 document.getElementById("set-dev-name").value = d.dev || "";
                 document.getElementById("set-sec-p").value = d.sec_p;
