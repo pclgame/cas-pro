@@ -25,6 +25,13 @@
         #main-screen { display: none; padding: 20px; }
         header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; border-bottom: 1px solid var(--border); padding-bottom: 15px; }
         
+        /* Banner Rinnovo */
+        .renewal-banner { 
+            display: none; background: #f59e0b; color: #000; padding: 15px; text-align: center; 
+            font-weight: bold; font-size: 14px; border-bottom: 2px solid #d97706; position: sticky; top: 0; z-index: 999;
+        }
+        .renewal-banner a { color: #000; text-decoration: underline; display: block; margin-top: 5px; text-transform: uppercase; }
+
         .total-revenue-box { 
             background: linear-gradient(135deg, var(--card) 0%, #1e293b 100%);
             padding: 25px; border-radius: 20px; margin-bottom: 25px; text-align: center; border: 2px solid var(--accent);
@@ -64,6 +71,11 @@
     </style>
 </head>
 <body>
+
+    <div id="renewalBanner" class="renewal-banner">
+        ⚠️ LA TUA LICENZA SCADRÀ A BREVE
+        <a id="whatsappLink" href="#" target="_blank">Rinnova ora su WhatsApp</a>
+    </div>
 
     <div id="login-screen">
         <div style="background:var(--card); padding:30px; border-radius:20px; width:100%; max-width:320px; border:1px solid var(--border);">
@@ -166,14 +178,39 @@
         }
 
         function startApp() {
-            // Carica la memoria storica all'avvio
             const cache = localStorage.getItem("cas_device_cache");
             if(cache) devices = JSON.parse(cache);
 
             document.getElementById("login-screen").style.display = "none";
             document.getElementById("main-screen").style.display = "block";
             document.getElementById("clientName").innerText = currentUser.nome;
-            document.getElementById("expiryDisplay").innerText = "Scadenza: " + new Date(currentUser.scadenza).toLocaleDateString('it-IT');
+            
+            const expiryDate = new Date(currentUser.scadenza);
+            document.getElementById("expiryDisplay").innerText = "Scadenza: " + expiryDate.toLocaleDateString('it-IT');
+
+            // --- CONTROLLO SCADENZA 7 GIORNI ---
+            const today = new Date();
+            const diffTime = expiryDate - today;
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+            if (diffDays <= 7 && diffDays > 0) {
+                const banner = document.getElementById("renewalBanner");
+                const waLink = document.getElementById("whatsappLink");
+                
+                const messaggio = encodeURIComponent(
+                    `Ciao! Vorrei rinnovare la licenza per il sistema CAS SYSTEM.\n\n` +
+                    `Cliente: ${currentUser.nome}\n` +
+                    `Scadenza attuale: ${expiryDate.toLocaleDateString('it-IT')}\n\n` +
+                    `Piani di rinnovo:\n` +
+                    `- 1 Mese: 10€\n` +
+                    `- 6 Mesi: 50€ (1 Mese Gratis)\n` +
+                    `- 12 Mesi: 90€ (3 Mesi Gratis)`
+                );
+
+                banner.style.display = "block";
+                waLink.href = `https://wa.me/393273524945?text=${messaggio}`;
+                document.getElementById("expiryDisplay").style.background = "#ef4444";
+            }
 
             mqttClient = mqtt.connect('wss://4c3d155d119d45b48f9a1d88d1963d9a.s1.eu.hivemq.cloud:8884/mqtt', {
                 username: 'admin_cas_system',
@@ -190,17 +227,13 @@
                     const data = JSON.parse(msg.toString());
                     const m = data.mac.toUpperCase();
                     const oraAttuale = Math.floor(Date.now() / 1000);
-
                     if (data.ts && (oraAttuale - data.ts > 20)) return; 
-
                     if(data.status === "offline") {
                         if(devices[m]) devices[m].forcedOffline = true;
                     } else {
-                        // Aggiorna e salva nella cache persistente
                         devices[m] = { ...data, lastSeen: Date.now(), forcedOffline: false };
                         localStorage.setItem("cas_device_cache", JSON.stringify(devices));
                     }
-                    
                     renderGrid();
                     updateGrandTotal();
                     if(selectedMac === m) updatePopupData(devices[m]);
@@ -208,7 +241,7 @@
             });
 
             setInterval(renderGrid, 3000);
-            renderGrid(); // Render iniziale con dati cache
+            renderGrid();
             updateGrandTotal();
         }
 
@@ -243,16 +276,12 @@
                 const mac = m.trim().toUpperCase();
                 const d = devices[mac];
                 const isOnline = d && (Date.now() - d.lastSeen < 12000) && !d.forcedOffline;
-                
-                // Ora il nome viene preso dalla cache se il modulo è offline
                 const label = (d && d.dev) ? d.dev : "MODULO " + mac.slice(-5);
                 const card = document.createElement("div");
                 card.className = "device-card";
                 card.onclick = () => openPop(mac);
-                
                 const min = (d && isOnline) ? Math.floor(d.sec / 60) : 0;
                 const sec = (d && isOnline) ? Math.floor(d.sec % 60) : 0;
-                
                 card.innerHTML = `
                     <div class="status-dot ${isOnline ? 'online' : 'offline'}"></div>
                     <span class="dev-name-label">${label}</span>
@@ -273,14 +302,10 @@
             const isOnline = d && (Date.now() - d.lastSeen < 12000) && !d.forcedOffline;
             const min = Math.floor(d.sec / 60);
             const sec = Math.floor(d.sec % 60);
-            
             document.getElementById("view-sec").innerText = isOnline ? `${min.toString().padStart(2,'0')}:${sec.toString().padStart(2,'0')}` : "--:--";
             document.getElementById("view-money").innerText = isOnline ? d.money.toFixed(2) + "€" : "---€";
-            
-            // Mostra l'ultimo orario salvato se offline
             document.getElementById("view-lastseen").innerText = isOnline ? "In tempo reale" : (d.lastSeen ? "Ultimo segnale: " + new Date(d.lastSeen).toLocaleTimeString() : "Mai ricevuto");
             document.getElementById("wifi-indicator").innerHTML = isOnline ? getWifiIcon(d.rssi) : "OFFLINE";
-            
             if(document.activeElement.tagName !== 'INPUT') {
                 document.getElementById("set-dev-name").value = d.dev || "";
                 document.getElementById("set-sec-p").value = d.sec_p || 0;
@@ -292,13 +317,10 @@
         function saveParams() {
             if(!selectedMac) return;
             const newName = document.getElementById("set-dev-name").value;
-            
-            // Aggiorna localmente per feedback immediato
             if(devices[selectedMac]) {
                 devices[selectedMac].dev = newName;
                 localStorage.setItem("cas_device_cache", JSON.stringify(devices));
             }
-
             mqttClient.publish(`cas_system/cmd/${selectedMac}`, JSON.stringify({
                 dev: newName,
                 sec_p: parseInt(document.getElementById("set-sec-p").value),
@@ -317,7 +339,7 @@
         function logout() {
             if(confirm("Uscire?")) {
                 localStorage.removeItem("cas_saved_pin");
-                localStorage.removeItem("cas_device_cache"); // Pulisce cache al logout
+                localStorage.removeItem("cas_device_cache");
                 location.reload();
             }
         }
