@@ -187,17 +187,28 @@
                 try {
                     const data = JSON.parse(msg.toString());
                     const m = data.mac.toUpperCase();
+
+                    // --- LOGICA FILTRO ANTI-FALSO-ONLINE ---
+                    const oraAttuale = Math.floor(Date.now() / 1000);
+                    // Se il messaggio ha un timestamp e questo è più vecchio di 20 secondi, lo scartiamo (è un rimasuglio del server)
+                    if (data.ts && (oraAttuale - data.ts > 20)) {
+                        console.log("Messaggio vecchio scartato per: " + m);
+                        return; 
+                    }
+
                     if(data.status === "offline") {
                         if(devices[m]) devices[m].forcedOffline = true;
                     } else {
                         devices[m] = { ...data, lastSeen: Date.now(), forcedOffline: false };
                     }
+                    
                     renderGrid();
                     updateGrandTotal();
                     if(selectedMac === m) updatePopupData(devices[m]);
                 } catch(e) {}
             });
 
+            // Watchdog ogni 3 secondi
             setInterval(renderGrid, 3000);
         }
 
@@ -231,13 +242,18 @@
             currentUser.mac.forEach(m => {
                 const mac = m.trim().toUpperCase();
                 const d = devices[mac];
+                
+                // Un modulo è online solo se il dato è fresco (< 12 secondi) e non ha ricevuto comando offline
                 const isOnline = d && (Date.now() - d.lastSeen < 12000) && !d.forcedOffline;
+                
                 const label = (d && d.dev) ? d.dev : "MODULO " + mac.slice(-5);
                 const card = document.createElement("div");
                 card.className = "device-card";
                 card.onclick = () => openPop(mac);
+                
                 const min = (d && isOnline) ? Math.floor(d.sec / 60) : 0;
                 const sec = (d && isOnline) ? Math.floor(d.sec % 60) : 0;
+                
                 card.innerHTML = `
                     <div class="status-dot ${isOnline ? 'online' : 'offline'}"></div>
                     <span class="dev-name-label">${label}</span>
@@ -258,10 +274,12 @@
             const isOnline = d && (Date.now() - d.lastSeen < 12000) && !d.forcedOffline;
             const min = Math.floor(d.sec / 60);
             const sec = Math.floor(d.sec % 60);
+            
             document.getElementById("view-sec").innerText = isOnline ? `${min.toString().padStart(2,'0')}:${sec.toString().padStart(2,'0')}` : "--:--";
             document.getElementById("view-money").innerText = isOnline ? d.money.toFixed(2) + "€" : "---€";
             document.getElementById("view-lastseen").innerText = isOnline ? "Adesso" : "Ultimo segnale: " + new Date(d.lastSeen).toLocaleTimeString();
             document.getElementById("wifi-indicator").innerHTML = isOnline ? getWifiIcon(d.rssi) : "OFFLINE";
+            
             if(document.activeElement.tagName !== 'INPUT') {
                 document.getElementById("set-dev-name").value = d.dev || "";
                 document.getElementById("set-sec-p").value = d.sec_p;
