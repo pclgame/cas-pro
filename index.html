@@ -25,14 +25,9 @@
         #main-screen { display: none; padding: 20px; }
         header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; border-bottom: 1px solid var(--border); padding-bottom: 15px; }
         
-        /* Sezione Totale Incasso */
         .total-revenue-box { 
             background: linear-gradient(135deg, var(--card) 0%, #1e293b 100%);
-            padding: 25px; 
-            border-radius: 20px; 
-            margin-bottom: 25px; 
-            text-align: center; 
-            border: 2px solid var(--accent);
+            padding: 25px; border-radius: 20px; margin-bottom: 25px; text-align: center; border: 2px solid var(--accent);
             box-shadow: 0 4px 15px rgba(59, 130, 246, 0.2);
         }
         .total-label { font-size: 14px; color: var(--accent); font-weight: bold; text-transform: uppercase; letter-spacing: 1px; display: block; margin-bottom: 5px; }
@@ -94,7 +89,6 @@
             <button onclick="logout()" class="logout-btn">LOGOUT</button>
         </header>
 
-        <!-- Box Totale Incasso Unificato -->
         <div class="total-revenue-box">
             <span class="total-label">Totale Incasso</span>
             <div id="grand-total" class="total-amount">0.00€</div>
@@ -103,7 +97,6 @@
         <div class="grid" id="deviceGrid"></div>
     </div>
 
-    <!-- Overlay Popup Modulo -->
     <div id="overlay">
         <div class="popup">
             <h2 id="popTitle" style="margin-top:0; color:var(--accent);">MODULO</h2>
@@ -173,6 +166,10 @@
         }
 
         function startApp() {
+            // Carica la memoria storica all'avvio
+            const cache = localStorage.getItem("cas_device_cache");
+            if(cache) devices = JSON.parse(cache);
+
             document.getElementById("login-screen").style.display = "none";
             document.getElementById("main-screen").style.display = "block";
             document.getElementById("clientName").innerText = currentUser.nome;
@@ -192,18 +189,16 @@
                 try {
                     const data = JSON.parse(msg.toString());
                     const m = data.mac.toUpperCase();
-
-                    // --- LOGICA FILTRO ANTI-FALSO-ONLINE ---
                     const oraAttuale = Math.floor(Date.now() / 1000);
-                    if (data.ts && (oraAttuale - data.ts > 20)) {
-                        console.log("Messaggio vecchio scartato per: " + m);
-                        return; 
-                    }
+
+                    if (data.ts && (oraAttuale - data.ts > 20)) return; 
 
                     if(data.status === "offline") {
                         if(devices[m]) devices[m].forcedOffline = true;
                     } else {
+                        // Aggiorna e salva nella cache persistente
                         devices[m] = { ...data, lastSeen: Date.now(), forcedOffline: false };
+                        localStorage.setItem("cas_device_cache", JSON.stringify(devices));
                     }
                     
                     renderGrid();
@@ -213,6 +208,8 @@
             });
 
             setInterval(renderGrid, 3000);
+            renderGrid(); // Render iniziale con dati cache
+            updateGrandTotal();
         }
 
         function updateGrandTotal() {
@@ -247,6 +244,7 @@
                 const d = devices[mac];
                 const isOnline = d && (Date.now() - d.lastSeen < 12000) && !d.forcedOffline;
                 
+                // Ora il nome viene preso dalla cache se il modulo è offline
                 const label = (d && d.dev) ? d.dev : "MODULO " + mac.slice(-5);
                 const card = document.createElement("div");
                 card.className = "device-card";
@@ -278,26 +276,37 @@
             
             document.getElementById("view-sec").innerText = isOnline ? `${min.toString().padStart(2,'0')}:${sec.toString().padStart(2,'0')}` : "--:--";
             document.getElementById("view-money").innerText = isOnline ? d.money.toFixed(2) + "€" : "---€";
-            document.getElementById("view-lastseen").innerText = isOnline ? "Adesso" : "Ultimo segnale: " + new Date(d.lastSeen).toLocaleTimeString();
+            
+            // Mostra l'ultimo orario salvato se offline
+            document.getElementById("view-lastseen").innerText = isOnline ? "In tempo reale" : (d.lastSeen ? "Ultimo segnale: " + new Date(d.lastSeen).toLocaleTimeString() : "Mai ricevuto");
             document.getElementById("wifi-indicator").innerHTML = isOnline ? getWifiIcon(d.rssi) : "OFFLINE";
             
             if(document.activeElement.tagName !== 'INPUT') {
                 document.getElementById("set-dev-name").value = d.dev || "";
-                document.getElementById("set-sec-p").value = d.sec_p;
-                document.getElementById("set-min-i").value = d.min_i;
-                document.getElementById("set-c-val").value = d.c_val;
+                document.getElementById("set-sec-p").value = d.sec_p || 0;
+                document.getElementById("set-min-i").value = d.min_i || 0;
+                document.getElementById("set-c-val").value = d.c_val || 0;
             }
         }
 
         function saveParams() {
             if(!selectedMac) return;
+            const newName = document.getElementById("set-dev-name").value;
+            
+            // Aggiorna localmente per feedback immediato
+            if(devices[selectedMac]) {
+                devices[selectedMac].dev = newName;
+                localStorage.setItem("cas_device_cache", JSON.stringify(devices));
+            }
+
             mqttClient.publish(`cas_system/cmd/${selectedMac}`, JSON.stringify({
-                dev: document.getElementById("set-dev-name").value,
+                dev: newName,
                 sec_p: parseInt(document.getElementById("set-sec-p").value),
                 min_i: parseInt(document.getElementById("set-min-i").value),
                 c_val: parseFloat(document.getElementById("set-c-val").value)
             }));
-            alert("Salvato!");
+            alert("Parametri inviati!");
+            renderGrid();
         }
 
         function sendCmd(cmd) {
@@ -308,6 +317,7 @@
         function logout() {
             if(confirm("Uscire?")) {
                 localStorage.removeItem("cas_saved_pin");
+                localStorage.removeItem("cas_device_cache"); // Pulisce cache al logout
                 location.reload();
             }
         }
