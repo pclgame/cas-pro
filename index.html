@@ -353,9 +353,16 @@
         }
 
         function sendCmd(cmd) {
-            if(!selectedMac) return;
-            mqttClient.publish(`cas_system/cmd/${selectedMac}`, JSON.stringify({ cmd: cmd }));
-        }
+    if(!selectedMac) return;
+
+    // Aggiungiamo il blocco di sicurezza per l'azzeramento
+    if (cmd === 'RESET_TOTAL') {
+        const conferma = confirm("ATTENZIONE: Stai per azzerare l'incasso totale di questo modulo. L'azione non è reversibile. Vuoi procedere?");
+        if (!conferma) return; // Se l'utente clicca 'Annulla', il comando non viene inviato
+    }
+
+    mqttClient.publish(`cas_system/cmd/${selectedMac}`, JSON.stringify({ cmd: cmd }));
+}
 
         function logout() {
             if(confirm("Uscire?")) {
