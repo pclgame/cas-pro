@@ -2,11 +2,9 @@
     "1111": {
         "nome": "LA ROSA DEI VENTI",
         "mac": [
-            "28:37:2F:5F:7A:00",
             "94:A9:90:99:34:B4",
             "DC:1E:D5:1C:A7:E8"
         ],
-        "scadenza": "2026-05-25",
-        "ruolo": "cliente"
+        "scadenza": "2026-05-25"
     }
 }
