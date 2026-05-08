@@ -7,16 +7,24 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>C.A.S. SYSTEM PRO</title>
 
-    <!-- Configurazione Icone -->
     <link rel="icon" type="image/png" sizes="192x192" href="icona-cas.png">
     <link rel="apple-touch-icon" href="icona-cas.png">
     <meta name="theme-color" content="#0f172a">
     
-    <!-- Libreria MQTT -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mqtt/4.3.7/mqtt.min.js"></script>
 
     <style>
-        :root { --bg: #0f172a; --card: #1e293b; --accent: #3b82f6; --text: #f8fafc; --online: #10b981; --offline: #ef4444; --border: #334155; --expired: #f87171; }
+        :root { 
+            --bg: #0f172a; 
+            --card: #1e293b; 
+            --accent: #3b82f6; 
+            --text: #f8fafc; 
+            --online: #10b981; 
+            --offline: #ef4444; 
+            --border: #334155; 
+            --expired: #f87171; 
+            --blocked: #ef4444; /* Colore rosso per indicare lo stato Sospeso */
+        }
         body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 0; }
         
         #login-screen, #expired-screen { display: flex; align-items: center; justify-content: center; height: 100vh; text-align: center; padding: 20px; box-sizing: border-box; }
@@ -46,6 +54,7 @@
         .status-dot { position: absolute; top: 12px; right: 12px; width: 12px; height: 12px; border-radius: 50%; }
         .online { background: var(--online); box-shadow: 0 0 8px var(--online); }
         .offline { background: var(--offline); }
+        .blocked-status { background: var(--blocked); box-shadow: 0 0 8px var(--blocked); }
         
         .dev-name-label { font-size: 13px; font-weight: bold; color: #94a3b8; margin-bottom: 8px; display: block; text-transform: uppercase; }
         .money-val { font-size: 24px; font-weight: bold; color: var(--accent); margin: 5px 0; }
@@ -123,21 +132,15 @@
                 <div class="row"><span>Qualità Segnale:</span><div id="wifi-indicator" class="wifi-bar-container"></div></div>
                 <div class="row"><span>Ultimo Segnale:</span> <span id="view-lastseen" style="font-size:12px; opacity:0.6;">--</span></div>
             </div>
-            <div class="section">
+            <div class="section" id="params-section">
                 <span class="section-title">Parametri</span>
                 <div class="row"><span>Sec per Scatto:</span><input type="number" id="set-sec-p"></div>
                 <div class="row"><span>Impulsi Minimi:</span><input type="number" id="set-min-i"></div>
                 <div class="row"><span>Valore Scatto €:</span><input type="number" step="0.1" id="set-c-val"></div>
                 <button class="btn-cmd" style="background: #10b981;" onclick="saveParams()">SALVA</button>
             </div>
-            <div class="section">
-                <span class="section-title">Azioni Rapide</span>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                    <button class="btn-cmd" style="background:var(--accent)" onclick="sendCmd('REMOTE_START')">AVVIA</button>
-                    <button class="btn-cmd" style="background:#ef4444;" onclick="sendCmd('REMOTE_STOP')">FERMA</button>
+            <div class="section" id="actions-section">
                 </div>
-                <button class="btn-cmd" style="background:#475569" onclick="sendCmd('RESET_TOTAL')">AZZERA CONTATORE</button>
-            </div>
             <button class="close-btn" onclick="closePop()">CHIUDI</button>
         </div>
     </div>
@@ -182,197 +185,4 @@
             if(cache) devices = JSON.parse(cache);
 
             document.getElementById("login-screen").style.display = "none";
-            document.getElementById("main-screen").style.display = "block";
-            document.getElementById("clientName").innerText = currentUser.nome;
-            
-            const expiryDate = new Date(currentUser.scadenza);
-            document.getElementById("expiryDisplay").innerText = "Scadenza: " + expiryDate.toLocaleDateString('it-IT');
-
-            // --- CONTROLLO SCADENZA 7 GIORNI ---
-            const today = new Date();
-            const diffTime = expiryDate - today;
-            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-            if (diffDays <= 7 && diffDays > 0) {
-                const banner = document.getElementById("renewalBanner");
-                const waLink = document.getElementById("whatsappLink");
-                
-                const messaggio = encodeURIComponent(
-                    `Ciao! Vorrei rinnovare la licenza per il sistema CAS GESTIONALE REMOTO.\n\n` +
-                    `Cliente: ${currentUser.nome}\n` +
-                    `Scadenza attuale: ${expiryDate.toLocaleDateString('it-IT')}\n\n` +
-                    `Piani di rinnovo:\n` +
-                    `- 1 Mese: 10€\n` +
-                    `- 6 Mesi: 50€ (1 Mese Gratis)\n` +
-                    `- 12 Mesi: 90€ (3 Mesi Gratis)`
-                );
-
-                banner.style.display = "block";
-                waLink.href = `https://wa.me/393273524945?text=${messaggio}`;
-                document.getElementById("expiryDisplay").style.background = "#ef4444";
-            }
-
-            mqttClient = mqtt.connect('wss://4c3d155d119d45b48f9a1d88d1963d9a.s1.eu.hivemq.cloud:8884/mqtt', {
-                username: 'admin_cas_system',
-                password: 'CAS_gate_2026!#',
-                clientId: 'WEB_' + Math.random().toString(16).substr(2, 5)
-            });
-
-            mqttClient.on('connect', () => {
-                currentUser.mac.forEach(m => mqttClient.subscribe(`cas_system/status/${m.trim().toUpperCase()}`));
-            });
-
-            mqttClient.on('message', (topic, msg) => {
-                try {
-                    const data = JSON.parse(msg.toString());
-                    const m = data.mac.toUpperCase();
-                    const oraAttuale = Math.floor(Date.now() / 1000);
-                    if (data.ts && (oraAttuale - data.ts > 20)) return; 
-                    if(data.status === "offline") {
-                        if(devices[m]) devices[m].forcedOffline = true;
-                    } else {
-                        devices[m] = { ...data, lastSeen: Date.now(), forcedOffline: false };
-                        localStorage.setItem("cas_device_cache", JSON.stringify(devices));
-                    }
-                    renderGrid();
-                    updateGrandTotal();
-                    if(selectedMac === m) updatePopupData(devices[m]);
-                } catch(e) {}
-            });
-
-            setInterval(renderGrid, 3000);
-            renderGrid();
-            updateGrandTotal();
-        }
-
-        function updateGrandTotal() {
-            let grandTotal = 0;
-            Object.values(devices).forEach(d => {
-                const isOnline = d && (Date.now() - d.lastSeen < 12000) && !d.forcedOffline;
-                if(isOnline && d.money) grandTotal += d.money;
-            });
-            document.getElementById("grand-total").innerText = grandTotal.toFixed(2) + "€";
-        }
-
-        function getWifiIcon(rssi) {
-            let bars = 0;
-            if (rssi > -60) bars = 4;
-            else if (rssi > -70) bars = 3;
-            else if (rssi > -80) bars = 2;
-            else if (rssi > -90) bars = 1;
-            let html = '<div class="wifi-bar-container">';
-            for(let i=1; i<=4; i++) {
-                let color = i <= bars ? 'var(--online)' : '#475569';
-                html += `<div class="wifi-bar" style="height:${i*4}px; background:${color}"></div>`;
-            }
-            return html + '</div>';
-        }
-
-        function renderGrid() {
-            const container = document.getElementById("deviceGrid");
-            if (!container) return;
-            container.innerHTML = "";
-            currentUser.mac.forEach(m => {
-                const mac = m.trim().toUpperCase();
-                const d = devices[mac];
-                const isOnline = d && (Date.now() - d.lastSeen < 12000) && !d.forcedOffline;
-                const label = (d && d.dev) ? d.dev : "MODULO " + mac.slice(-5);
-                const card = document.createElement("div");
-                card.className = "device-card";
-                card.onclick = () => openPop(mac);
-                const min = (d && isOnline) ? Math.floor(d.sec / 60) : 0;
-                const sec = (d && isOnline) ? Math.floor(d.sec % 60) : 0;
-                card.innerHTML = `
-                    <div class="status-dot ${isOnline ? 'online' : 'offline'}"></div>
-                    <span class="dev-name-label">${label}</span>
-                    <div class="money-val">${(d && isOnline) ? d.money.toFixed(2) : '---'}€</div>
-                    <div class="timer-val">${min.toString().padStart(2,'0')}:${sec.toString().padStart(2,'0')}</div>
-                `;
-                container.appendChild(card);
-            });
-        }
-
-        function openPop(mac) {
-            selectedMac = mac;
-            if(devices[mac]) updatePopupData(devices[mac]);
-            document.getElementById("overlay").style.display = "flex";
-        }
-
-        function updatePopupData(d) {
-    const isOnline = d && (Date.now() - d.lastSeen < 12000) && !d.forcedOffline;
-    const min = Math.floor(d.sec / 60);
-    const sec = Math.floor(d.sec % 60);
-    
-    document.getElementById("view-sec").innerText = isOnline ? `${min.toString().padStart(2,'0')}:${sec.toString().padStart(2,'0')}` : "--:--";
-    document.getElementById("view-money").innerText = isOnline ? d.money.toFixed(2) + "€" : "---€";
-    
-    // --- LOGICA DATA INTELLIGENTE ---
-    let lastSeenText = "Mai ricevuto";
-    if (d.lastSeen) {
-        const lastSeenDate = new Date(d.lastSeen);
-        const oggi = new Date();
-        
-        // Controlla se il segnale è di oggi
-        const èOggi = lastSeenDate.toLocaleDateString() === oggi.toLocaleDateString();
-        
-        const opzioni = èOggi 
-            ? { hour: '2-digit', minute: '2-digit' } 
-            : { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' };
-            
-        lastSeenText = "Ultimo segnale: " + lastSeenDate.toLocaleString('it-IT', opzioni);
-    }
-    
-    document.getElementById("view-lastseen").innerText = isOnline ? "In tempo reale" : lastSeenText;
-    // --------------------------------
-    
-    document.getElementById("wifi-indicator").innerHTML = isOnline ? getWifiIcon(d.rssi) : "OFFLINE";
-    
-    if(document.activeElement.tagName !== 'INPUT') {
-        document.getElementById("set-dev-name").value = d.dev || "";
-        document.getElementById("set-sec-p").value = d.sec_p || 0;
-        document.getElementById("set-min-i").value = d.min_i || 0;
-        document.getElementById("set-c-val").value = d.c_val || 0;
-    }
-}
-
-        function saveParams() {
-            if(!selectedMac) return;
-            const newName = document.getElementById("set-dev-name").value;
-            if(devices[selectedMac]) {
-                devices[selectedMac].dev = newName;
-                localStorage.setItem("cas_device_cache", JSON.stringify(devices));
-            }
-            mqttClient.publish(`cas_system/cmd/${selectedMac}`, JSON.stringify({
-                dev: newName,
-                sec_p: parseInt(document.getElementById("set-sec-p").value),
-                min_i: parseInt(document.getElementById("set-min-i").value),
-                c_val: parseFloat(document.getElementById("set-c-val").value)
-            }));
-            alert("Parametri inviati!");
-            renderGrid();
-        }
-
-        function sendCmd(cmd) {
-    if(!selectedMac) return;
-
-    // Aggiungiamo il blocco di sicurezza per l'azzeramento
-    if (cmd === 'RESET_TOTAL') {
-        const conferma = confirm("ATTENZIONE: Stai per azzerare l'incasso totale di questo modulo. L'azione non è reversibile. Vuoi procedere?");
-        if (!conferma) return; // Se l'utente clicca 'Annulla', il comando non viene inviato
-    }
-
-    mqttClient.publish(`cas_system/cmd/${selectedMac}`, JSON.stringify({ cmd: cmd }));
-}
-
-        function logout() {
-            if(confirm("Uscire?")) {
-                localStorage.removeItem("cas_saved_pin");
-                localStorage.removeItem("cas_device_cache");
-                location.reload();
-            }
-        }
-
-        function closePop() { document.getElementById("overlay").style.display = "none"; selectedMac = null; }
-    </script>
-</body>
-</html>
+            document.getElementById
