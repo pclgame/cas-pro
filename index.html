@@ -123,11 +123,9 @@
                 <div class="row"><span>Ultimo Segnale:</span> <span id="view-lastseen" style="font-size:12px; opacity:0.6;">--</span></div>
             </div>
             
-            <div class="section" id="params-section">
-                </div>
+            <div class="section" id="params-section"></div>
 
-            <div class="section" id="actions-section">
-                </div>
+            <div class="section" id="actions-section"></div>
             <button class="close-btn" onclick="closePop()">CHIUDI</button>
         </div>
     </div>
@@ -215,8 +213,19 @@
                 try {
                     const data = JSON.parse(msg.toString());
                     const m = data.mac.toUpperCase();
+                    
+                    // --- CORREZIONE TEMPORALE ROBUSTA ---
                     const oraAttuale = Math.floor(Date.now() / 1000);
-                    if (data.ts && (oraAttuale - data.ts > 20)) return; 
+                    
+                    // Se ts è presente ed è diverso da 0, applichiamo un controllo intelligente della tolleranza (fusi orari, ecc.)
+                    if (data.ts && data.ts !== 0) {
+                        // Tolleranza estesa a 300 secondi per coprire lievi disallineamenti di orologio
+                        if (Math.abs(oraAttuale - data.ts) > 300) {
+                            return; // Pacchetto troppo vecchio, scartato
+                        }
+                    }
+                    // Se ts è 0, significa che l'ESP non ha ancora sincronizzato l'NTP, quindi bypassiamo il controllo temporale ed accettiamo il pacchetto.
+
                     if(data.status === "offline") {
                         if(devices[m]) devices[m].forcedOffline = true;
                     } else {
@@ -346,7 +355,7 @@
                         <div class="row"><span>Tempo Max Erog. (sec):</span><input type="number" id="set-t-max"></div>
                         <button class="btn-cmd" style="background: #10b981;" onclick="saveParams('coffee')">SALVA</button>
                     `;
-                    // Precompila valori del caffè (o mette default se vuoti)
+                    // Precompila valori del caffè
                     document.getElementById("set-costo-b").value = d.costo_b !== undefined ? d.costo_b : 0;
                     document.getElementById("set-imp-c").value = d.imp_c !== undefined ? d.imp_c : 0;
                     document.getElementById("set-val-u").value = d.val_u !== undefined ? d.val_u : 0;
@@ -406,10 +415,10 @@
             let payload = { dev: newName };
 
             if (tipoErogatore === 'coffee') {
-                payload.costo_b = parseFloat(document.getElementById("set-costo-b").value);
-                payload.imp_c   = parseInt(document.getElementById("set-imp-c").value);
-                payload.val_u   = parseFloat(document.getElementById("set-val-u").value);
-                payload.t_max   = parseInt(document.getElementById("set-t-max").value);
+                payload.cost = parseFloat(document.getElementById("set-costo-b").value);
+                payload.imp_u = parseInt(document.getElementById("set-imp-c").value);
+                payload.c_val = parseFloat(document.getElementById("set-val-u").value);
+                payload.max_t = parseInt(document.getElementById("set-t-max").value);
             } else {
                 payload.sec_p = parseInt(document.getElementById("set-sec-p").value);
                 payload.min_i = parseInt(document.getElementById("set-min-i").value);
