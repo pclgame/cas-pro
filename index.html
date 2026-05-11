@@ -117,7 +117,7 @@
             </div>
             <div class="section">
                 <span class="section-title">Stato Attuale</span>
-                <div class="row"><span>Tempo Attivo:</span> <span id="view-sec" class="timer-val">00:00</span></div>
+                <div class="row" id="popup-timer-row"><span>Tempo Attivo:</span> <span id="view-sec" class="timer-val">00:00</span></div>
                 <div class="row"><span>Incasso:</span> <span id="view-money">0.00€</span></div>
                 <div class="row"><span>Qualità Segnale:</span><div id="wifi-indicator" class="wifi-bar-container"></div></div>
                 <div class="row"><span>Ultimo Segnale:</span> <span id="view-lastseen" style="font-size:12px; opacity:0.6;">--</span></div>
@@ -279,21 +279,33 @@
                 const card = document.createElement("div");
                 card.className = "device-card";
                 card.onclick = () => openPop(mac);
-                const min = (d && isOnline) ? Math.floor(d.sec / 60) : 0;
-                const sec = (d && isOnline) ? Math.floor(d.sec % 60) : 0;
                 
                 let dotClass = 'offline';
                 if (isOnline) {
                     dotClass = isBlocked ? 'blocked-status' : 'online';
                 }
 
+                // Determiniamo se è un modulo caffè
+                const isCoffee = d && d.type === "coffee";
+
+                // Se non è caffè e la scheda è online, calcoliamo i minuti e i secondi
+                let timerHtml = "";
+                if (!isCoffee) {
+                    const min = (d && isOnline) ? Math.floor(d.sec / 60) : 0;
+                    const sec = (d && isOnline) ? Math.floor(d.sec % 60) : 0;
+                    const timerColorStyle = isBlocked ? 'color: var(--blocked); font-weight: bold;' : '';
+                    timerHtml = `
+                        <div class="timer-val" style="${timerColorStyle}">
+                            ${isBlocked ? 'SOSPESO' : min.toString().padStart(2,'0') + ':' + sec.toString().padStart(2,'0')}
+                        </div>
+                    `;
+                }
+
                 card.innerHTML = `
                     <div class="status-dot ${dotClass}"></div>
                     <span class="dev-name-label">${label} ${isBlocked ? '⚠️' : ''}</span>
                     <div class="money-val">${(d && isOnline) ? d.money.toFixed(2) : '---'}€</div>
-                    <div class="timer-val" style="${isBlocked ? 'color: var(--blocked); font-weight: bold;' : ''}">
-                        ${isBlocked ? 'SOSPESO' : min.toString().padStart(2,'0') + ':' + sec.toString().padStart(2,'0')}
-                    </div>
+                    ${timerHtml}
                 `;
                 container.appendChild(card);
             });
@@ -308,11 +320,22 @@
         function updatePopupData(d) {
             const isOnline = d && (Date.now() - d.lastSeen < 12000) && !d.forcedOffline;
             const isBlocked = d && d.blocked === true;
-            const min = Math.floor(d.sec / 60);
-            const sec = Math.floor(d.sec % 60);
+            const isCoffee = d && d.type === "coffee";
             
-            document.getElementById("view-sec").innerText = isOnline ? (isBlocked ? "SOSPESO" : `${min.toString().padStart(2,'0')}:${sec.toString().padStart(2,'0')}`) : "--:--";
-            document.getElementById("view-sec").style.color = isBlocked ? "var(--blocked)" : "#fbbf24";
+            // Gestione visibilità riga tempo attivo nel popup
+            const timerRow = document.getElementById("popup-timer-row");
+            if (isCoffee) {
+                if (timerRow) timerRow.style.display = "none";
+            } else {
+                if (timerRow) {
+                    timerRow.style.display = "flex";
+                    const min = Math.floor(d.sec / 60);
+                    const sec = Math.floor(d.sec % 60);
+                    document.getElementById("view-sec").innerText = isOnline ? (isBlocked ? "SOSPESO" : `${min.toString().padStart(2,'0')}:${sec.toString().padStart(2,'0')}`) : "--:--";
+                    document.getElementById("view-sec").style.color = isBlocked ? "var(--blocked)" : "#fbbf24";
+                }
+            }
+            
             document.getElementById("view-money").innerText = isOnline ? d.money.toFixed(2) + "€" : "---€";
             
             let lastSeenText = "Mai ricevuto";
@@ -342,8 +365,6 @@
 
             // RILEVAZIONE TIPO DI SCHEDA & COSTRUZIONE FORM PARAMETRI
             if (!isBlocked && paramsSection && document.activeElement.tagName !== 'INPUT') {
-                const isCoffee = (d.type === "coffee");
-                
                 if (isCoffee) {
                     // --- MODULO CAFFÈ (4 parametri) ---
                     // Parametri attesi: costo_b (costo bevanda), imp_c (impulsi per credito), val_u (valore unità credito), t_max (tempo max erogazione)
