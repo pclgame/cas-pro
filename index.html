@@ -120,23 +120,14 @@
                 <div class="row"><span>Tempo Attivo:</span> <span id="view-sec" class="timer-val">00:00</span></div>
                 <div class="row"><span>Incasso:</span> <span id="view-money">0.00€</span></div>
                 <div class="row"><span>Qualità Segnale:</span><div id="wifi-indicator" class="wifi-bar-container"></div></div>
-                <div class="row"><span>Ultimo Segnale:</span> <span id="view-lastseen" style="font-size:12px; opacity:06;">--</span></div>
+                <div class="row"><span>Ultimo Segnale:</span> <span id="view-lastseen" style="font-size:12px; opacity:0.6;">--</span></div>
             </div>
+            
             <div class="section" id="params-section">
-                <span class="section-title">Parametri</span>
-                <div class="row"><span>Sec per Scatto:</span><input type="number" id="set-sec-p"></div>
-                <div class="row"><span>Impulsi Minimi:</span><input type="number" id="set-min-i"></div>
-                <div class="row"><span>Valore Scatto €:</span><input type="number" step="0.1" id="set-c-val"></div>
-                <button class="btn-cmd" style="background: #10b981;" onclick="saveParams()">SALVA</button>
-            </div>
-            <div class="section" id="actions-section">
-                <span class="section-title">Azioni Rapide</span>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                    <button class="btn-cmd" style="background:var(--accent)" onclick="sendCmd('REMOTE_START')">AVVIA</button>
-                    <button class="btn-cmd" style="background:#ef4444;" onclick="sendCmd('REMOTE_STOP')">FERMA</button>
                 </div>
-                <button class="btn-cmd" style="background:#475569" onclick="sendCmd('RESET_TOTAL')">AZZERA CONTATORE</button>
-            </div>
+
+            <div class="section" id="actions-section">
+                </div>
             <button class="close-btn" onclick="closePop()">CHIUDI</button>
         </div>
     </div>
@@ -187,7 +178,6 @@
             const expiryDate = new Date(currentUser.scadenza);
             document.getElementById("expiryDisplay").innerText = "Scadenza: " + expiryDate.toLocaleDateString('it-IT');
 
-            // --- CONTROLLO SCADENZA 7 GIORNI ---
             const today = new Date();
             const diffTime = expiryDate - today;
             const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
@@ -316,15 +306,11 @@
             document.getElementById("view-sec").style.color = isBlocked ? "var(--blocked)" : "#fbbf24";
             document.getElementById("view-money").innerText = isOnline ? d.money.toFixed(2) + "€" : "---€";
             
-            // --- LOGICA DATA INTELLIGENTE ---
             let lastSeenText = "Mai ricevuto";
             if (d.lastSeen) {
                 const lastSeenDate = new Date(d.lastSeen);
                 const oggi = new Date();
-                
-                // Controlla se il segnale è di oggi
                 const èOggi = lastSeenDate.toLocaleDateString() === oggi.toLocaleDateString();
-                
                 const opzioni = èOggi 
                     ? { hour: '2-digit', minute: '2-digit' } 
                     : { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' };
@@ -335,23 +321,56 @@
             document.getElementById("view-lastseen").innerText = isOnline ? "In tempo reale" : lastSeenText;
             document.getElementById("wifi-indicator").innerHTML = isOnline ? getWifiIcon(d.rssi) : "OFFLINE";
             
-            // Gestione editabilità nome se bloccato
             document.getElementById("set-dev-name").disabled = isBlocked;
             document.getElementById("set-dev-name").style.opacity = isBlocked ? "0.5" : "1";
             
             if(document.activeElement.tagName !== 'INPUT') {
                 document.getElementById("set-dev-name").value = d.dev || "";
-                document.getElementById("set-sec-p").value = d.sec_p || 0;
-                document.getElementById("set-min-i").value = d.min_i || 0;
-                document.getElementById("set-c-val").value = d.c_val || 0;
             }
 
-            // Gestione delle sezioni parametri e azioni rapide se bloccato
             const paramsSection = document.getElementById("params-section");
             const actionsSection = document.getElementById("actions-section");
 
+            // RILEVAZIONE TIPO DI SCHEDA & COSTRUZIONE FORM PARAMETRI
+            if (!isBlocked && paramsSection && document.activeElement.tagName !== 'INPUT') {
+                const isCoffee = (d.type === "coffee");
+                
+                if (isCoffee) {
+                    // --- MODULO CAFFÈ (4 parametri) ---
+                    // Parametri attesi: costo_b (costo bevanda), imp_c (impulsi per credito), val_u (valore unità credito), t_max (tempo max erogazione)
+                    paramsSection.innerHTML = `
+                        <span class="section-title">Parametri Macchina Caffè</span>
+                        <div class="row"><span>Costo Bevanda €:</span><input type="number" step="0.10" id="set-costo-b"></div>
+                        <div class="row"><span>Impulsi per Credito:</span><input type="number" id="set-imp-c"></div>
+                        <div class="row"><span>Valore Unità Credito €:</span><input type="number" step="0.01" id="set-val-u"></div>
+                        <div class="row"><span>Tempo Max Erog. (sec):</span><input type="number" id="set-t-max"></div>
+                        <button class="btn-cmd" style="background: #10b981;" onclick="saveParams('coffee')">SALVA</button>
+                    `;
+                    // Precompila valori del caffè (o mette default se vuoti)
+                    document.getElementById("set-costo-b").value = d.costo_b !== undefined ? d.costo_b : 0;
+                    document.getElementById("set-imp-c").value = d.imp_c !== undefined ? d.imp_c : 0;
+                    document.getElementById("set-val-u").value = d.val_u !== undefined ? d.val_u : 0;
+                    document.getElementById("set-t-max").value = d.t_max !== undefined ? d.t_max : 0;
+
+                } else {
+                    // --- MODULO TIMER (3 parametri standard) ---
+                    // Parametri attesi: sec_p (sec per scatto), min_i (impulsi minimi), c_val (valore scatto €)
+                    paramsSection.innerHTML = `
+                        <span class="section-title">Parametri Modulo Timer</span>
+                        <div class="row"><span>Sec per Scatto:</span><input type="number" id="set-sec-p"></div>
+                        <div class="row"><span>Impulsi Minimi:</span><input type="number" id="set-min-i"></div>
+                        <div class="row"><span>Valore Scatto €:</span><input type="number" step="0.1" id="set-c-val"></div>
+                        <button class="btn-cmd" style="background: #10b981;" onclick="saveParams('timer')">SALVA</button>
+                    `;
+                    // Precompila valori del timer
+                    document.getElementById("set-sec-p").value = d.sec_p !== undefined ? d.sec_p : 0;
+                    document.getElementById("set-min-i").value = d.min_i !== undefined ? d.min_i : 0;
+                    document.getElementById("set-c-val").value = d.c_val !== undefined ? d.c_val : 0;
+                }
+            }
+
             if (isBlocked) {
-                if (paramsSection) paramsSection.style.display = "none";
+                if (paramsSection) paramsSection.innerHTML = "";
                 if (actionsSection) {
                     actionsSection.innerHTML = `
                         <span class="section-title" style="color: var(--blocked); font-weight: bold;">⚠️ STATO DISPOSITIVO</span>
@@ -362,7 +381,6 @@
                     `;
                 }
             } else {
-                if (paramsSection) paramsSection.style.display = "block";
                 if (actionsSection) {
                     actionsSection.innerHTML = `
                         <span class="section-title">Azioni Rapide</span>
@@ -376,32 +394,39 @@
             }
         }
 
-        function saveParams() {
+        function saveParams(tipoErogatore) {
             if(!selectedMac) return;
             const newName = document.getElementById("set-dev-name").value;
+            
             if(devices[selectedMac]) {
                 devices[selectedMac].dev = newName;
                 localStorage.setItem("cas_device_cache", JSON.stringify(devices));
             }
-            mqttClient.publish(`cas_system/cmd/${selectedMac}`, JSON.stringify({
-                dev: newName,
-                sec_p: parseInt(document.getElementById("set-sec-p").value),
-                min_i: parseInt(document.getElementById("set-min-i").value),
-                c_val: parseFloat(document.getElementById("set-c-val").value)
-            }));
-            alert("Parametri inviati!");
+
+            let payload = { dev: newName };
+
+            if (tipoErogatore === 'coffee') {
+                payload.costo_b = parseFloat(document.getElementById("set-costo-b").value);
+                payload.imp_c   = parseInt(document.getElementById("set-imp-c").value);
+                payload.val_u   = parseFloat(document.getElementById("set-val-u").value);
+                payload.t_max   = parseInt(document.getElementById("set-t-max").value);
+            } else {
+                payload.sec_p = parseInt(document.getElementById("set-sec-p").value);
+                payload.min_i = parseInt(document.getElementById("set-min-i").value);
+                payload.c_val = parseFloat(document.getElementById("set-c-val").value);
+            }
+
+            mqttClient.publish(`cas_system/cmd/${selectedMac}`, JSON.stringify(payload));
+            alert("Parametri inviati con successo!");
             renderGrid();
         }
 
         function sendCmd(cmd) {
             if(!selectedMac) return;
-
-            // Aggiungiamo il blocco di sicurezza per l'azzeramento
             if (cmd === 'RESET_TOTAL') {
                 const conferma = confirm("ATTENZIONE: Stai per azzerare l'incasso totale di questo modulo. L'azione non è reversibile. Vuoi procedere?");
-                if (!conferma) return; // Se l'utente clicca 'Annulla', il comando non viene inviato
+                if (!conferma) return;
             }
-
             mqttClient.publish(`cas_system/cmd/${selectedMac}`, JSON.stringify({ cmd: cmd }));
         }
 
