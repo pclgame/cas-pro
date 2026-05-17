@@ -5,470 +5,109 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>C.A.S. SYSTEM PRO</title>
+    <title>Manutenzione - C.A.S. SYSTEM PRO</title>
 
     <link rel="icon" type="image/png" sizes="192x192" href="icona-cas.png">
     <link class="apple-touch-icon" href="icona-cas.png">
     <meta name="theme-color" content="#0f172a">
     
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/mqtt/4.3.7/mqtt.min.js"></script>
-
     <style>
-        :root { --bg: #0f172a; --card: #1e293b; --accent: #3b82f6; --text: #f8fafc; --online: #10b981; --offline: #ef4444; --border: #334155; --expired: #f87171; --blocked: #ef4444; }
-        body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 0; }
-        
-        #login-screen, #expired-screen { display: flex; align-items: center; justify-content: center; height: 100vh; text-align: center; padding: 20px; box-sizing: border-box; }
-        #expired-screen { display: none; flex-direction: column; background: #450a0a; }
-        
-        #main-screen { display: none; padding: 20px; }
-        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; border-bottom: 1px solid var(--border); padding-bottom: 15px; }
-        
-        /* Banner Rinnovo */
-        .renewal-banner { 
-            display: none; background: #f59e0b; color: #000; padding: 15px; text-align: center; 
-            font-weight: bold; font-size: 14px; border-bottom: 2px solid #d97706; position: sticky; top: 0; z-index: 999;
+        :root { 
+            --bg: #0f172a; 
+            --card: #1e293b; 
+            --accent: #3b82f6; 
+            --text: #f8fafc; 
+            --muted: #94a3b8;
+            --border: #334155; 
         }
-        .renewal-banner a { color: #000; text-decoration: underline; display: block; margin-top: 5px; text-transform: uppercase; }
-
-        .total-revenue-box { 
-            background: linear-gradient(135deg, var(--card) 0%, #1e293b 100%);
-            padding: 25px; border-radius: 20px; margin-bottom: 25px; text-align: center; border: 2px solid var(--accent);
-            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.2);
+        
+        body { 
+            font-family: -apple-system, system-ui, sans-serif; 
+            background: var(--bg); 
+            color: var(--text); 
+            margin: 0; 
+            padding: 0; 
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            box-sizing: border-box;
         }
-        .total-label { font-size: 14px; color: var(--accent); font-weight: bold; text-transform: uppercase; letter-spacing: 1px; display: block; margin-bottom: 5px; }
-        .total-amount { font-size: 38px; font-weight: 900; color: var(--text); }
 
-        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 15px; }
-        .device-card { background: var(--card); padding: 20px; border-radius: 15px; text-align: center; position: relative; border: 2px solid var(--border); cursor: pointer; transition: 0.3s; }
-        .device-card:hover { border-color: var(--accent); }
-        .status-dot { position: absolute; top: 12px; right: 12px; width: 12px; height: 12px; border-radius: 50%; }
-        .online { background: var(--online); box-shadow: 0 0 8px var(--online); }
-        .offline { background: var(--offline); }
-        .blocked-status { background: var(--blocked); box-shadow: 0 0 8px var(--blocked); }
-        
-        .dev-name-label { font-size: 13px; font-weight: bold; color: #94a3b8; margin-bottom: 8px; display: block; text-transform: uppercase; }
-        .money-val { font-size: 24px; font-weight: bold; color: var(--accent); margin: 5px 0; }
-        .timer-val { font-size: 18px; font-family: monospace; color: #fbbf24; }
+        .maintenance-container {
+            background: var(--card);
+            padding: 35px 25px;
+            border-radius: 20px;
+            width: 100%;
+            max-width: 360px;
+            border: 1px solid var(--border);
+            text-align: center;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+            margin: 20px;
+        }
 
-        #overlay { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:100; overflow-y: auto; padding: 20px; box-sizing: border-box; }
-        .popup { background: var(--card); width: 100%; max-width: 500px; border-radius: 20px; padding: 25px; margin: auto; border: 1px solid var(--border); }
-        .section { background: var(--bg); padding: 12px; border-radius: 12px; margin-bottom: 15px; border: 1px solid var(--border); }
-        .section-title { font-size: 11px; color: var(--accent); font-weight: bold; text-transform: uppercase; margin-bottom: 8px; display: block; }
-        
-        .row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-size: 14px; }
-        input { background: #1e293b; border: 1px solid var(--border); color: white; padding: 8px; border-radius: 5px; width: 100px; text-align: right; }
-        input.wide { width: 180px; text-align: left; }
-        
-        .wifi-bar-container { display: flex; align-items: center; gap: 4px; }
-        .wifi-bar { width: 4px; border-radius: 1px; background: #475569; }
-        
-        .btn-cmd { width: 100%; padding: 12px; border-radius: 10px; border: none; font-weight: bold; color: white; cursor: pointer; margin-top: 10px; transition: 0.2s; }
-        .close-btn { background: #ef4444; color: white; border: none; padding: 10px 20px; border-radius: 8px; width: 100%; margin-top: 20px; cursor: pointer; }
-        
-        .scadenza-box { font-size: 12px; font-weight: bold; padding: 4px 8px; border-radius: 5px; background: #334155; }
-        .logout-btn { background: #ef4444; color: white; border: none; padding: 8px 15px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 12px; }
+        .icon-wrapper {
+            font-size: 50px;
+            margin-bottom: 15px;
+            animation: pulse 2s infinite ease-in-out;
+        }
+
+        h2 {
+            color: var(--accent);
+            margin: 0 0 10px 0;
+            font-size: 22px;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+
+        .system-title {
+            font-size: 12px;
+            font-weight: bold;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 25px;
+            display: block;
+        }
+
+        p {
+            color: var(--text);
+            font-size: 15px;
+            line-height: 1.6;
+            margin: 0 0 20px 0;
+        }
+
+        .info-box {
+            background: rgba(59, 130, 246, 0.1);
+            border: 1px solid rgba(59, 130, 246, 0.2);
+            padding: 12px;
+            border-radius: 10px;
+            font-size: 13px;
+            color: #93c5fd;
+            line-height: 1.4;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 0.9; }
+            50% { transform: scale(1.05); opacity: 1; }
+            100% { transform: scale(1); opacity: 0.9; }
+        }
     </style>
 </head>
 <body>
 
-    <div id="renewalBanner" class="renewal-banner">
-        ⚠️ LA TUA LICENZA SCADRÀ A BREVE
-        <a id="whatsappLink" href="#" target="_blank">Rinnova ora su WhatsApp</a>
-    </div>
-
-    <div id="login-screen">
-        <div style="background:var(--card); padding:30px; border-radius:20px; width:100%; max-width:320px; border:1px solid var(--border);">
-            <h2 style="color:var(--accent); margin-bottom:20px;">C.A.S. SYSTEM</h2>
-            <input type="password" id="pinInput" placeholder="PIN" style="width:100%; text-align:center; font-size:22px; margin-bottom:20px;">
-            <button onclick="checkLogin()" class="btn-cmd" style="background:var(--accent)">ACCEDI</button>
+    <div class="maintenance-container">
+        <div class="icon-wrapper">🛠️</div>
+        <h2>Lavori in Corso</h2>
+        <span class="system-title">C.A.S. SYSTEM PRO</span>
+        
+        <p>Stiamo aggiornando la piattaforma con nuove funzionalità e miglioramenti tecnici per garantirti un servizio ancora più rapido e stabile.</p>
+        
+        <div class="info-box">
+            <strong>Nota per gli utenti:</strong><br>
+            I moduli sul territorio continuano a funzionare regolarmente. L'accesso alla gestione remota sarà ripristinato a breve.
         </div>
     </div>
 
-    <div id="expired-screen">
-        <h1 style="font-size:60px; margin:0;">⚠️</h1>
-        <h2 style="color:var(--expired);">LICENZA SCADUTA</h2>
-        <p id="expiredDateInfo"></p>
-        <button onclick="logout()" class="btn-cmd" style="background:var(--border); margin-top:20px; width:auto; padding:10px 30px;">INDIETRO</button>
-    </div>
-
-    <div id="main-screen">
-        <header>
-            <div>
-                <h2 id="clientName" style="margin:0">---</h2>
-                <div id="expiryDisplay" class="scadenza-box" style="margin-top:5px; display:inline-block;">Scadenza: --/--/----</div>
-            </div>
-            <button onclick="logout()" class="logout-btn">LOGOUT</button>
-        </header>
-
-        <div class="total-revenue-box">
-            <span class="total-label">Totale Incasso</span>
-            <div id="grand-total" class="total-amount">0.00€</div>
-        </div>
-
-        <div class="grid" id="deviceGrid"></div>
-    </div>
-
-    <div id="overlay">
-        <div class="popup">
-            <h2 id="popTitle" style="margin-top:0; color:var(--accent);">MODULO</h2>
-            <div class="section">
-                <span class="section-title">Identificazione</span>
-                <div class="row"><span>Nome Modulo:</span><input type="text" id="set-dev-name" class="wide"></div>
-            </div>
-            <div class="section">
-                <span class="section-title">Stato Attuale</span>
-                <div class="row" id="popup-timer-row"><span>Tempo Attivo:</span> <span id="view-sec" class="timer-val">00:00</span></div>
-                <div class="row"><span>Incasso:</span> <span id="view-money">0.00€</span></div>
-                <div class="row"><span>Qualità Segnale:</span><div id="wifi-indicator" class="wifi-bar-container"></div></div>
-                <div class="row"><span>Ultimo Segnale:</span> <span id="view-lastseen" style="font-size:12px; opacity:0.6;">--</span></div>
-            </div>
-            
-            <div class="section" id="params-section"></div>
-
-            <div class="section" id="actions-section"></div>
-            <button class="close-btn" onclick="closePop()">CHIUDI</button>
-        </div>
-    </div>
-
-    <script>
-        let currentUser = null;
-        let devices = {};
-        let selectedMac = null;
-        let mqttClient = null;
-
-        window.onload = function() {
-            const savedPin = localStorage.getItem("cas_saved_pin");
-            if (savedPin) checkLogin(savedPin);
-        };
-
-        async function checkLogin(providedPin = null) {
-            const pin = providedPin || document.getElementById("pinInput").value;
-            try {
-                const r = await fetch(`database_clienti.json?v=${Date.now()}`);
-                const db = await r.json();
-                if (db[pin]) {
-                    if (!providedPin) localStorage.setItem("cas_saved_pin", pin);
-                    currentUser = db[pin];
-                    const today = new Date();
-                    const exp = new Date(currentUser.scadenza);
-                    if (today > exp) {
-                        document.getElementById("login-screen").style.display = "none";
-                        document.getElementById("expired-screen").style.display = "flex";
-                        document.getElementById("expiredDateInfo").innerText = "Scaduta il: " + exp.toLocaleDateString('it-IT');
-                    } else {
-                        startApp();
-                    }
-                } else {
-                    if (providedPin) localStorage.removeItem("cas_saved_pin");
-                    else alert("PIN Errato");
-                }
-            } catch(e) {}
-        }
-
-        function startApp() {
-            const cache = localStorage.getItem("cas_device_cache");
-            if(cache) devices = JSON.parse(cache);
-
-            document.getElementById("login-screen").style.display = "none";
-            document.getElementById("main-screen").style.display = "block";
-            document.getElementById("clientName").innerText = currentUser.nome;
-            
-            const expiryDate = new Date(currentUser.scadenza);
-            document.getElementById("expiryDisplay").innerText = "Scadenza: " + expiryDate.toLocaleDateString('it-IT');
-
-            const today = new Date();
-            const diffTime = expiryDate - today;
-            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-            if (diffDays <= 7 && diffDays > 0) {
-                const banner = document.getElementById("renewalBanner");
-                const waLink = document.getElementById("whatsappLink");
-                
-                const messaggio = encodeURIComponent(
-                    `Ciao! Vorrei rinnovare la licenza per il sistema CAS GESTIONALE REMOTO.\n\n` +
-                    `Cliente: ${currentUser.nome}\n` +
-                    `Scadenza attuale: ${expiryDate.toLocaleDateString('it-IT')}\n\n` +
-                    `Piani di rinnovo:\n` +
-                    `- 1 Mese: 10€\n` +
-                    `- 6 Mesi: 50€ (1 Mese Gratis)\n` +
-                    `- 12 Mesi: 90€ (3 Mesi Gratis)`
-                );
-
-                banner.style.display = "block";
-                waLink.href = `https://wa.me/393273524945?text=${messaggio}`;
-                document.getElementById("expiryDisplay").style.background = "#ef4444";
-            }
-
-            mqttClient = mqtt.connect('wss://4c3d155d119d45b48f9a1d88d1963d9a.s1.eu.hivemq.cloud:8884/mqtt', {
-                username: 'admin_cas_system',
-                password: 'CAS_gate_2026!#',
-                clientId: 'WEB_' + Math.random().toString(16).substr(2, 5)
-            });
-
-            mqttClient.on('connect', () => {
-                currentUser.mac.forEach(m => mqttClient.subscribe(`cas_system/status/${m.trim().toUpperCase()}`));
-            });
-
-            mqttClient.on('message', (topic, msg) => {
-                try {
-                    const data = JSON.parse(msg.toString());
-                    const m = data.mac.toUpperCase();
-                    
-                    // --- CORREZIONE TEMPORALE ROBUSTA ---
-                    const oraAttuale = Math.floor(Date.now() / 1000);
-                    
-                    // Se ts è presente ed è diverso da 0, applichiamo un controllo intelligente della tolleranza (fusi orari, ecc.)
-                    if (data.ts && data.ts !== 0) {
-                        // Tolleranza estesa a 300 secondi per coprire lievi disallineamenti di orologio
-                        if (Math.abs(oraAttuale - data.ts) > 300) {
-                            return; // Pacchetto troppo vecchio, scartato
-                        }
-                    }
-                    // Se ts è 0, significa che l'ESP non ha ancora sincronizzato l'NTP, quindi bypassiamo il controllo temporale ed accettiamo il pacchetto.
-
-                    if(data.status === "offline") {
-                        if(devices[m]) devices[m].forcedOffline = true;
-                    } else {
-                        devices[m] = { ...data, lastSeen: Date.now(), forcedOffline: false };
-                        localStorage.setItem("cas_device_cache", JSON.stringify(devices));
-                    }
-                    renderGrid();
-                    updateGrandTotal();
-                    if(selectedMac === m) updatePopupData(devices[m]);
-                } catch(e) {}
-            });
-
-            setInterval(renderGrid, 3000);
-            renderGrid();
-            updateGrandTotal();
-        }
-
-        function updateGrandTotal() {
-            let grandTotal = 0;
-            Object.values(devices).forEach(d => {
-                const isOnline = d && (Date.now() - d.lastSeen < 12000) && !d.forcedOffline;
-                if(isOnline && d.money) grandTotal += d.money;
-            });
-            document.getElementById("grand-total").innerText = grandTotal.toFixed(2) + "€";
-        }
-
-        function getWifiIcon(rssi) {
-            let bars = 0;
-            if (rssi > -60) bars = 4;
-            else if (rssi > -70) bars = 3;
-            else if (rssi > -80) bars = 2;
-            else if (rssi > -90) bars = 1;
-            let html = '<div class="wifi-bar-container">';
-            for(let i=1; i<=4; i++) {
-                let color = i <= bars ? 'var(--online)' : '#475569';
-                html += `<div class="wifi-bar" style="height:${i*4}px; background:${color}"></div>`;
-            }
-            return html + '</div>';
-        }
-
-        function renderGrid() {
-            const container = document.getElementById("deviceGrid");
-            if (!container) return;
-            container.innerHTML = "";
-            currentUser.mac.forEach(m => {
-                const mac = m.trim().toUpperCase();
-                const d = devices[mac];
-                const isOnline = d && (Date.now() - d.lastSeen < 12000) && !d.forcedOffline;
-                const isBlocked = d && d.blocked === true;
-                const label = (d && d.dev) ? d.dev : "MODULO " + mac.slice(-5);
-                const card = document.createElement("div");
-                card.className = "device-card";
-                card.onclick = () => openPop(mac);
-                
-                let dotClass = 'offline';
-                if (isOnline) {
-                    dotClass = isBlocked ? 'blocked-status' : 'online';
-                }
-
-                // Determiniamo se è un modulo caffè
-                const isCoffee = d && d.type === "coffee";
-
-                // Se non è caffè e la scheda è online, calcoliamo i minuti e i secondi
-                let timerHtml = "";
-                if (!isCoffee) {
-                    const min = (d && isOnline) ? Math.floor(d.sec / 60) : 0;
-                    const sec = (d && isOnline) ? Math.floor(d.sec % 60) : 0;
-                    const timerColorStyle = isBlocked ? 'color: var(--blocked); font-weight: bold;' : '';
-                    timerHtml = `
-                        <div class="timer-val" style="${timerColorStyle}">
-                            ${isBlocked ? 'SOSPESO' : min.toString().padStart(2,'0') + ':' + sec.toString().padStart(2,'0')}
-                        </div>
-                    `;
-                }
-
-                card.innerHTML = `
-                    <div class="status-dot ${dotClass}"></div>
-                    <span class="dev-name-label">${label} ${isBlocked ? '⚠️' : ''}</span>
-                    <div class="money-val">${(d && isOnline) ? d.money.toFixed(2) : '---'}€</div>
-                    ${timerHtml}
-                `;
-                container.appendChild(card);
-            });
-        }
-
-        function openPop(mac) {
-            selectedMac = mac;
-            if(devices[mac]) updatePopupData(devices[mac]);
-            document.getElementById("overlay").style.display = "flex";
-        }
-
-        function updatePopupData(d) {
-            const isOnline = d && (Date.now() - d.lastSeen < 12000) && !d.forcedOffline;
-            const isBlocked = d && d.blocked === true;
-            const isCoffee = d && d.type === "coffee";
-            
-            // Gestione visibilità riga tempo attivo nel popup
-            const timerRow = document.getElementById("popup-timer-row");
-            if (isCoffee) {
-                if (timerRow) timerRow.style.display = "none";
-            } else {
-                if (timerRow) {
-                    timerRow.style.display = "flex";
-                    const min = Math.floor(d.sec / 60);
-                    const sec = Math.floor(d.sec % 60);
-                    document.getElementById("view-sec").innerText = isOnline ? (isBlocked ? "SOSPESO" : `${min.toString().padStart(2,'0')}:${sec.toString().padStart(2,'0')}`) : "--:--";
-                    document.getElementById("view-sec").style.color = isBlocked ? "var(--blocked)" : "#fbbf24";
-                }
-            }
-            
-            document.getElementById("view-money").innerText = isOnline ? d.money.toFixed(2) + "€" : "---€";
-            
-            let lastSeenText = "Mai ricevuto";
-            if (d.lastSeen) {
-                const lastSeenDate = new Date(d.lastSeen);
-                const oggi = new Date();
-                const èOggi = lastSeenDate.toLocaleDateString() === oggi.toLocaleDateString();
-                const opzioni = èOggi 
-                    ? { hour: '2-digit', minute: '2-digit' } 
-                    : { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' };
-                    
-                lastSeenText = "Ultimo segnale: " + lastSeenDate.toLocaleString('it-IT', opzioni);
-            }
-            
-            document.getElementById("view-lastseen").innerText = isOnline ? "In tempo reale" : lastSeenText;
-            document.getElementById("wifi-indicator").innerHTML = isOnline ? getWifiIcon(d.rssi) : "OFFLINE";
-            
-            document.getElementById("set-dev-name").disabled = isBlocked;
-            document.getElementById("set-dev-name").style.opacity = isBlocked ? "0.5" : "1";
-            
-            if(document.activeElement.tagName !== 'INPUT') {
-                document.getElementById("set-dev-name").value = d.dev || "";
-            }
-
-            const paramsSection = document.getElementById("params-section");
-            const actionsSection = document.getElementById("actions-section");
-
-            // RILEVAZIONE TIPO DI SCHEDA & COSTRUZIONE FORM PARAMETRI
-            if (!isBlocked && paramsSection && document.activeElement.tagName !== 'INPUT') {
-                if (isCoffee) {
-                    // --- MODULO CAFFÈ (4 parametri) ---
-                    // Parametri attesi: costo_b (costo bevanda), imp_c (impulsi per credito), val_u (valore unità credito), t_max (tempo max erogazione)
-                    paramsSection.innerHTML = `
-                        <span class="section-title">Parametri Macchina Caffè</span>
-                        <div class="row"><span>Costo Bevanda €:</span><input type="number" step="0.10" id="set-costo-b"></div>
-                        <div class="row"><span>Impulsi per Credito:</span><input type="number" id="set-imp-c"></div>
-                        <div class="row"><span>Valore Unità Credito €:</span><input type="number" step="0.01" id="set-val-u"></div>
-                        <div class="row"><span>Tempo Max Erog. (sec):</span><input type="number" id="set-t-max"></div>
-                        <button class="btn-cmd" style="background: #10b981;" onclick="saveParams('coffee')">SALVA</button>
-                    `;
-                    // Precompila valori del caffè
-                    document.getElementById("set-costo-b").value = d.costo_b !== undefined ? d.costo_b : 0;
-                    document.getElementById("set-imp-c").value = d.imp_c !== undefined ? d.imp_c : 0;
-                    document.getElementById("set-val-u").value = d.val_u !== undefined ? d.val_u : 0;
-                    document.getElementById("set-t-max").value = d.t_max !== undefined ? d.t_max : 0;
-
-                } else {
-                    // --- MODULO TIMER (3 parametri standard) ---
-                    // Parametri attesi: sec_p (sec per scatto), min_i (impulsi minimi), c_val (valore scatto €)
-                    paramsSection.innerHTML = `
-                        <span class="section-title">Parametri Modulo Timer</span>
-                        <div class="row"><span>Sec per Scatto:</span><input type="number" id="set-sec-p"></div>
-                        <div class="row"><span>Impulsi Minimi:</span><input type="number" id="set-min-i"></div>
-                        <div class="row"><span>Valore Scatto €:</span><input type="number" step="0.1" id="set-c-val"></div>
-                        <button class="btn-cmd" style="background: #10b981;" onclick="saveParams('timer')">SALVA</button>
-                    `;
-                    // Precompila valori del timer
-                    document.getElementById("set-sec-p").value = d.sec_p !== undefined ? d.sec_p : 0;
-                    document.getElementById("set-min-i").value = d.min_i !== undefined ? d.min_i : 0;
-                    document.getElementById("set-c-val").value = d.c_val !== undefined ? d.c_val : 0;
-                }
-            }
-
-            if (isBlocked) {
-                if (paramsSection) paramsSection.innerHTML = "";
-                if (actionsSection) {
-                    actionsSection.innerHTML = `
-                        <span class="section-title" style="color: var(--blocked); font-weight: bold;">⚠️ STATO DISPOSITIVO</span>
-                        <div style="background: #450a0a; padding: 15px; border-radius: 10px; border: 1px solid #ef4444; text-align: center; color: #f87171; font-size: 13px;">
-                            <strong>SERVIZIO TEMPORANEAMENTE SOSPESO</strong><br>
-                            Contattare l'amministratore del sistema per informazioni o per richiedere lo sblocco del modulo.
-                        </div>
-                    `;
-                }
-            } else {
-                if (actionsSection) {
-                    actionsSection.innerHTML = `
-                        <span class="section-title">Azioni Rapide</span>
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                            <button class="btn-cmd" style="background:var(--accent)" onclick="sendCmd('REMOTE_START')">AVVIA</button>
-                            <button class="btn-cmd" style="background:#ef4444;" onclick="sendCmd('REMOTE_STOP')">FERMA</button>
-                        </div>
-                        <button class="btn-cmd" style="background:#475569" onclick="sendCmd('RESET_TOTAL')">AZZERA CONTATORE</button>
-                    `;
-                }
-            }
-        }
-
-        function saveParams(tipoErogatore) {
-            if(!selectedMac) return;
-            const newName = document.getElementById("set-dev-name").value;
-            
-            if(devices[selectedMac]) {
-                devices[selectedMac].dev = newName;
-                localStorage.setItem("cas_device_cache", JSON.stringify(devices));
-            }
-
-            let payload = { dev: newName };
-
-            if (tipoErogatore === 'coffee') {
-                payload.cost = parseFloat(document.getElementById("set-costo-b").value);
-                payload.imp_u = parseInt(document.getElementById("set-imp-c").value);
-                payload.c_val = parseFloat(document.getElementById("set-val-u").value);
-                payload.max_t = parseInt(document.getElementById("set-t-max").value);
-            } else {
-                payload.sec_p = parseInt(document.getElementById("set-sec-p").value);
-                payload.min_i = parseInt(document.getElementById("set-min-i").value);
-                payload.c_val = parseFloat(document.getElementById("set-c-val").value);
-            }
-
-            mqttClient.publish(`cas_system/cmd/${selectedMac}`, JSON.stringify(payload));
-            alert("Parametri inviati con successo!");
-            renderGrid();
-        }
-
-        function sendCmd(cmd) {
-            if(!selectedMac) return;
-            if (cmd === 'RESET_TOTAL') {
-                const conferma = confirm("ATTENZIONE: Stai per azzerare l'incasso totale di questo modulo. L'azione non è reversibile. Vuoi procedere?");
-                if (!conferma) return;
-            }
-            mqttClient.publish(`cas_system/cmd/${selectedMac}`, JSON.stringify({ cmd: cmd }));
-        }
-
-        function logout() {
-            if(confirm("Uscire?")) {
-                localStorage.removeItem("cas_saved_pin");
-                localStorage.removeItem("cas_device_cache");
-                location.reload();
-            }
-        }
-
-        function closePop() { document.getElementById("overlay").style.display = "none"; selectedMac = null; }
-    </script>
 </body>
 </html>
