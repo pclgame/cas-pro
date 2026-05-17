@@ -311,9 +311,20 @@
             });
         }
 
-        function openPop(mac) {
+function openPop(mac) {
             selectedMac = mac;
-            if(devices[mac]) updatePopupData(devices[mac]);
+            if(devices[mac]) {
+                const d = devices[mac];
+                const isCoffee = d && d.type === "coffee";
+                
+                // Determina l'icona da affiancare alla scritta MODULO
+                const iconaModulo = isCoffee ? " ☕" : " ⏱️";
+                
+                // Aggiorna il titolo del popup inserendo l'icona
+                document.getElementById("popTitle").innerText = "MODULO" + iconaModulo;
+                
+                updatePopupData(d);
+            }
             document.getElementById("overlay").style.display = "flex";
         }
 
