@@ -447,7 +447,339 @@
     </div>
 
     <script>
-        (function(_0x56f563,_0x54ae22){const _0x406fec=_0x122d,_0x14ffa0=_0x56f563();while(!![]){try{const _0x42e751=parseInt(_0x406fec(0x17c))/0x1*(parseInt(_0x406fec(0x183))/0x2)+parseInt(_0x406fec(0x1b7))/0x3+-parseInt(_0x406fec(0x19e))/0x4*(-parseInt(_0x406fec(0x1c5))/0x5)+parseInt(_0x406fec(0x1ac))/0x6*(-parseInt(_0x406fec(0x1de))/0x7)+-parseInt(_0x406fec(0x163))/0x8+-parseInt(_0x406fec(0x1ea))/0x9+parseInt(_0x406fec(0x167))/0xa;if(_0x42e751===_0x54ae22)break;else _0x14ffa0['push'](_0x14ffa0['shift']());}catch(_0x156d69){_0x14ffa0['push'](_0x14ffa0['shift']());}}}(_0x5b5a,0x687ff));let currentUser=null,devices={},selectedMac=null,mqttClient=null;window['onload']=function(){const _0x5b0515=_0x122d,_0x28b38c=localStorage[_0x5b0515(0x17e)]('cas_saved_pin');if(_0x28b38c)checkLogin(_0x28b38c);};async function checkLogin(_0x50c1b1=null){const _0x3f0779=_0x122d,_0x197b10=_0x50c1b1||document[_0x3f0779(0x189)](_0x3f0779(0x1ee))[_0x3f0779(0x187)];try{const _0x6e578f=await fetch(_0x3f0779(0x16c)+Date[_0x3f0779(0x17f)]()),_0x5c52c0=await _0x6e578f[_0x3f0779(0x1b2)]();if(_0x5c52c0[_0x197b10]){if(!_0x50c1b1)localStorage[_0x3f0779(0x1b0)](_0x3f0779(0x197),_0x197b10);currentUser=_0x5c52c0[_0x197b10];const _0x2063e5=new Date(),_0x3d1953=new Date(currentUser[_0x3f0779(0x1c1)]);_0x2063e5>_0x3d1953?(document['getElementById'](_0x3f0779(0x1ae))['style'][_0x3f0779(0x1d2)]=_0x3f0779(0x1e0),document['getElementById']('expired-screen')[_0x3f0779(0x180)][_0x3f0779(0x1d2)]=_0x3f0779(0x172),document[_0x3f0779(0x189)](_0x3f0779(0x17b))[_0x3f0779(0x19b)]=_0x3f0779(0x198)+_0x3d1953['toLocaleDateString']('it-IT')):startApp();}else{if(_0x50c1b1)localStorage[_0x3f0779(0x170)](_0x3f0779(0x197));else alert('PIN\x20Errato');}}catch(_0x451eb5){}}function startApp(){const _0x34bb36=_0x122d,_0x1e0f19=localStorage[_0x34bb36(0x17e)](_0x34bb36(0x19f));if(_0x1e0f19)devices=JSON['parse'](_0x1e0f19);document[_0x34bb36(0x189)](_0x34bb36(0x1ae))[_0x34bb36(0x180)]['display']='none',document[_0x34bb36(0x189)](_0x34bb36(0x1f0))[_0x34bb36(0x180)]['display']=_0x34bb36(0x18f),document[_0x34bb36(0x189)](_0x34bb36(0x1b8))['innerText']=currentUser[_0x34bb36(0x1b9)];const _0x579ae4=new Date(currentUser[_0x34bb36(0x1c1)]);document[_0x34bb36(0x189)]('expiryDisplay')[_0x34bb36(0x19b)]=_0x34bb36(0x164)+_0x579ae4[_0x34bb36(0x190)](_0x34bb36(0x199));const _0xc306ca=new Date(),_0x2105c4=_0x579ae4-_0xc306ca,_0x37697e=Math['ceil'](_0x2105c4/(0x3e8*0x3c*0x3c*0x18));if(_0x37697e<=0x7&&_0x37697e>0x0){const _0x21920f=document['getElementById'](_0x34bb36(0x1a4)),_0x1ff2fa=document[_0x34bb36(0x189)]('whatsappLink'),_0x55d746=encodeURIComponent(_0x34bb36(0x193)+('Cliente:\x20'+currentUser[_0x34bb36(0x1b9)]+'\x0a')+(_0x34bb36(0x1a9)+_0x579ae4[_0x34bb36(0x190)](_0x34bb36(0x199))+'\x0a\x0a')+_0x34bb36(0x175)+_0x34bb36(0x1cf)+_0x34bb36(0x196)+_0x34bb36(0x161));_0x21920f[_0x34bb36(0x180)][_0x34bb36(0x1d2)]=_0x34bb36(0x18f),_0x1ff2fa[_0x34bb36(0x18d)]=_0x34bb36(0x186)+_0x55d746,document[_0x34bb36(0x189)](_0x34bb36(0x1a0))['style'][_0x34bb36(0x184)]=_0x34bb36(0x1c4),document[_0x34bb36(0x189)](_0x34bb36(0x1a0))['style'][_0x34bb36(0x1ed)]=_0x34bb36(0x19d),document[_0x34bb36(0x189)]('expiryDisplay')['style'][_0x34bb36(0x1ab)]=_0x34bb36(0x1c0);}mqttClient=mqtt[_0x34bb36(0x165)]('wss://4c3d155d119d45b48f9a1d88d1963d9a.s1.eu.hivemq.cloud:8884/mqtt',{'username':'admin_cas_system','password':'CAS_gate_2026!#','clientId':_0x34bb36(0x1f1)+Math['random']()[_0x34bb36(0x1ef)](0x10)[_0x34bb36(0x1a5)](0x2,0x5)}),mqttClient['on'](_0x34bb36(0x165),()=>{const _0xe4432d=_0x34bb36;currentUser[_0xe4432d(0x1a8)]['forEach'](_0x312ab8=>mqttClient[_0xe4432d(0x1ce)](_0xe4432d(0x1d0)+_0x312ab8[_0xe4432d(0x17a)]()[_0xe4432d(0x160)]()));}),mqttClient['on'](_0x34bb36(0x1e8),(_0xb453a,_0x36cf0a)=>{const _0x5401de=_0x34bb36;try{const _0x3d4b26=JSON[_0x5401de(0x192)](_0x36cf0a[_0x5401de(0x1ef)]()),_0x395530=_0x3d4b26['mac'][_0x5401de(0x160)](),_0x44e636=Math[_0x5401de(0x16d)](Date[_0x5401de(0x17f)]()/0x3e8);if(_0x3d4b26['ts']&&_0x3d4b26['ts']!==0x0){if(Math[_0x5401de(0x1d5)](_0x44e636-_0x3d4b26['ts'])>0x12c)return;}if(_0x3d4b26['status']==='offline'){if(devices[_0x395530])devices[_0x395530][_0x5401de(0x1a6)]=!![];}else devices[_0x395530]={..._0x3d4b26,'lastSeen':Date[_0x5401de(0x17f)](),'forcedOffline':![]},localStorage[_0x5401de(0x1b0)](_0x5401de(0x19f),JSON[_0x5401de(0x1d9)](devices));renderGrid(),updateGrandTotal();if(selectedMac===_0x395530)updatePopupData(devices[_0x395530]);}catch(_0x5f2829){}}),setInterval(renderGrid,0xbb8),renderGrid(),updateGrandTotal();}function _0x122d(_0x179a33,_0x27fcdd){_0x179a33=_0x179a33-0x160;const _0x5b5ae3=_0x5b5a();let _0x122d1c=_0x5b5ae3[_0x179a33];return _0x122d1c;}function updateGrandTotal(){const _0x1009ce=_0x122d;let _0x1e5a56=0x0;Object[_0x1009ce(0x1f2)](devices)[_0x1009ce(0x16b)](_0xc7f924=>{const _0x362f78=_0x1009ce,_0x2916f6=_0xc7f924&&Date[_0x362f78(0x17f)]()-_0xc7f924[_0x362f78(0x1d1)]<0x2ee0&&!_0xc7f924[_0x362f78(0x1a6)];if(_0x2916f6&&_0xc7f924[_0x362f78(0x1da)])_0x1e5a56+=_0xc7f924[_0x362f78(0x1da)];}),document[_0x1009ce(0x189)](_0x1009ce(0x1d3))['innerText']=_0x1e5a56[_0x1009ce(0x1dc)](0x2)+'€';}function getWifiIcon(_0x402143){const _0x3b0846=_0x122d;let _0x2411b6=0x0;if(_0x402143>-0x3c)_0x2411b6=0x4;else{if(_0x402143>-0x46)_0x2411b6=0x3;else{if(_0x402143>-0x50)_0x2411b6=0x2;else{if(_0x402143>-0x5a)_0x2411b6=0x1;}}}let _0x13d552=_0x3b0846(0x1bc);for(let _0x4ea8a6=0x1;_0x4ea8a6<=0x4;_0x4ea8a6++){let _0x11a020=_0x4ea8a6<=_0x2411b6?_0x3b0846(0x1b6):_0x3b0846(0x1be);_0x13d552+='<div\x20class=\x22wifi-bar\x22\x20style=\x22height:'+_0x4ea8a6*0x4+_0x3b0846(0x181)+_0x11a020+_0x3b0846(0x1cd);}return _0x13d552+_0x3b0846(0x19a);}function renderGrid(){const _0x2de3ad=_0x122d,_0x23c095=document[_0x2de3ad(0x189)]('deviceGrid');if(!_0x23c095)return;_0x23c095[_0x2de3ad(0x1ec)]='',currentUser[_0x2de3ad(0x1a8)][_0x2de3ad(0x16b)](_0x1bf1af=>{const _0x473395=_0x2de3ad,_0x1b9ea5=_0x1bf1af[_0x473395(0x17a)]()[_0x473395(0x160)](),_0x4c9d1d=devices[_0x1b9ea5],_0x509d12=_0x4c9d1d&&Date['now']()-_0x4c9d1d[_0x473395(0x1d1)]<0x2ee0&&!_0x4c9d1d[_0x473395(0x1a6)],_0xb9ea80=_0x4c9d1d&&_0x4c9d1d[_0x473395(0x169)]===!![],_0x24bad4=_0x4c9d1d&&_0x4c9d1d[_0x473395(0x1af)]?_0x4c9d1d[_0x473395(0x1af)]:_0x473395(0x18a)+_0x1b9ea5[_0x473395(0x18c)](-0x5),_0x5608cd=document[_0x473395(0x166)]('div');_0x5608cd[_0x473395(0x1cb)]=_0x473395(0x1b1),_0x5608cd['onclick']=()=>openPop(_0x1b9ea5);let _0x6ac960=_0x473395(0x1f3);_0x509d12&&(_0x6ac960=_0xb9ea80?'blocked-status':_0x473395(0x191));const _0x15cb1c=_0x4c9d1d&&_0x4c9d1d[_0x473395(0x16f)]==='coffee';let _0x3e1fae='';if(!_0x15cb1c){const _0x1f27f4=_0x4c9d1d&&_0x509d12?Math['floor'](_0x4c9d1d[_0x473395(0x1bb)]/0x3c):0x0,_0x44b401=_0x4c9d1d&&_0x509d12?Math[_0x473395(0x16d)](_0x4c9d1d[_0x473395(0x1bb)]%0x3c):0x0,_0x529c5a=_0xb9ea80?_0x473395(0x1a7):'';_0x3e1fae=_0x473395(0x1a2)+_0x529c5a+'\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20'+(_0xb9ea80?_0x473395(0x171):_0x1f27f4[_0x473395(0x1ef)]()[_0x473395(0x1e2)](0x2,'0')+':'+_0x44b401[_0x473395(0x1ef)]()[_0x473395(0x1e2)](0x2,'0'))+_0x473395(0x194);}_0x5608cd[_0x473395(0x1ec)]='\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22status-dot\x20'+_0x6ac960+'\x22></div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<span\x20class=\x22dev-name-label\x22>'+_0x24bad4+'\x20'+(_0xb9ea80?'⚠️':'')+'</span>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22money-val\x22>'+(_0x4c9d1d&&_0x509d12?_0x4c9d1d[_0x473395(0x1da)][_0x473395(0x1dc)](0x2):_0x473395(0x1d7))+_0x473395(0x1e3)+_0x3e1fae+_0x473395(0x1cc),_0x23c095['appendChild'](_0x5608cd);});}function openPop(_0x5044a3){const _0x5a1ff6=_0x122d;selectedMac=_0x5044a3;if(devices[_0x5044a3]){const _0x417b17=devices[_0x5044a3],_0x476a48=_0x417b17&&_0x417b17[_0x5a1ff6(0x16f)]==='coffee',_0x2e9716=_0x476a48?'\x20☕':_0x5a1ff6(0x17d);document['getElementById'](_0x5a1ff6(0x1bf))[_0x5a1ff6(0x19b)]=_0x5a1ff6(0x176)+_0x2e9716,updatePopupData(_0x417b17);}document[_0x5a1ff6(0x189)](_0x5a1ff6(0x1a1))['style'][_0x5a1ff6(0x1d2)]=_0x5a1ff6(0x172);}function _0x5b5a(){const _0x4091a2=['Mai\x20ricevuto','renewalBanner','substr','forcedOffline','color:\x20var(--blocked);\x20background:\x20rgba(239,\x2068,\x2068,\x200.15);\x20font-weight:\x20bold;','mac','Scadenza\x20attuale:\x20','view-lastseen','borderColor','6CjNFqA','popup-timer-row','login-screen','dev','setItem','device-card','json','INPUT','view-sec','set-val-u','var(--online)','585954tuTwGQ','clientName','nome','costo_b','sec','<div\x20class=\x22wifi-bar-container\x22>','max_t','#334155','popTitle','transparent','scadenza','In\x20tempo\x20reale','Ultimo\x20segnale:\x20','#ef4444','76605cKXfLY','set-sec-p','set-costo-b','cas_system/cmd/','RESET_TOTAL','rgba(245,\x20158,\x2011,\x200.1)','className','\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20','\x22></div>','subscribe','-\x201\x20Mese:\x2010€\x0a','cas_system/status/','lastSeen','display','grand-total','Parametri\x20inviati\x20con\x20successo!','abs','set-dev-name','---','rssi','stringify','money','actions-section','toFixed','ATTENZIONE:\x20Stai\x20per\x20azzerare\x20l\x27incasso\x20totale\x20di\x20questo\x20modulo.\x20L\x27azione\x20non\x20è\x20reversibile.\x20Vuoi\x20procedere?','81914HKxcMp','\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<span\x20class=\x22section-title\x22>Parametri\x20Macchina\x20Caffè</span>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22row\x22><span>Costo\x20Bevanda\x20€:</span><input\x20type=\x22number\x22\x20step=\x220.10\x22\x20id=\x22set-costo-b\x22></div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22row\x22><span>Impulsi\x20per\x20Credito:</span><input\x20type=\x22number\x22\x20id=\x22set-imp-c\x22></div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22row\x22><span>Valore\x20Unità\x20Credito\x20€:</span><input\x20type=\x22number\x22\x20step=\x220.01\x22\x20id=\x22set-val-u\x22></div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22row\x22><span>Tempo\x20Max\x20Erog.\x20(sec):</span><input\x20type=\x22number\x22\x20id=\x22set-t-max\x22></div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<button\x20class=\x22btn-cmd\x22\x20style=\x22background:\x20#10b981;\x20box-shadow:\x200\x204px\x2012px\x20rgba(16,\x20185,\x20129,\x200.25);\x22\x20onclick=\x22saveParams(\x27coffee\x27)\x22>SALVA\x20PARAMETRI</button>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20','none','publish','padStart','€</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20','coffee','imp_u','Uscire?','toLocaleString','message','cost','4159062tRzgzx','min_i','innerHTML','color','pinInput','toString','main-screen','WEB_','values','offline','toUpperCase','-\x2012\x20Mesi:\x2090€\x20(3\x20Mesi\x20Gratis)','opacity','4456504tiFRDc','Scadenza:\x20','connect','createElement','3566360mOFBkb','0.5','blocked','params-section','forEach','database_clienti.json?v=','floor','set-t-max','type','removeItem','SOSPESO','flex','set-imp-c','2-digit','Piani\x20di\x20rinnovo:\x0a','MODULO','reload','\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<span\x20class=\x22section-title\x22\x20style=\x22color:\x20var(--blocked);\x20font-weight:\x20bold;\x22>⚠️\x20STATO\x20DISPOSITIVO</span>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20style=\x22background:\x20#450a0a;\x20padding:\x2015px;\x20border-radius:\x2014px;\x20border:\x201px\x20solid\x20#ef4444;\x20text-align:\x20center;\x20color:\x20#f87171;\x20font-size:\x2013px;\x20line-height:\x201.4;\x20font-weight:\x20500;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<strong>SERVIZIO\x20TEMPORANEAMENTE\x20SOSPESO</strong><br>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20Contattare\x20l\x27amministratore\x20del\x20sistema\x20per\x20informazioni\x20o\x20per\x20richiedere\x20lo\x20sblocco\x20del\x20modulo.\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20','val_u','trim','expiredDateInfo','1fbbkuO','\x20⏱️','getItem','now','style','px;\x20background:','imp_c','373746wYcTVD','background','--:--','https://wa.me/393273524945?text=','value','activeElement','getElementById','MODULO\x20','sec_p','slice','href','t_max','block','toLocaleDateString','online','parse','Ciao!\x20Vorrei\x20rinnovare\x20la\x20licenza\x20per\x20il\x20sistema\x20CAS\x20GESTIONALE\x20REMOTO.\x0a\x0a','\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20','c_val','-\x206\x20Mesi:\x2050€\x20(1\x20Mese\x20Gratis)\x0a','cas_saved_pin','Scaduta\x20il:\x20','it-IT','</div>','innerText','set-min-i','#fff','188PzMIaN','cas_device_cache','expiryDisplay','overlay','\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22timer-val\x22\x20style=\x22'];_0x5b5a=function(){return _0x4091a2;};return _0x5b5a();}function updatePopupData(_0x2f91d4){const _0x13fb13=_0x122d,_0x4d1345=_0x2f91d4&&Date[_0x13fb13(0x17f)]()-_0x2f91d4[_0x13fb13(0x1d1)]<0x2ee0&&!_0x2f91d4[_0x13fb13(0x1a6)],_0x2ec268=_0x2f91d4&&_0x2f91d4[_0x13fb13(0x169)]===!![],_0x4a2b4b=_0x2f91d4&&_0x2f91d4['type']===_0x13fb13(0x1e4),_0x28f1f1=document[_0x13fb13(0x189)](_0x13fb13(0x1ad));if(_0x4a2b4b){if(_0x28f1f1)_0x28f1f1[_0x13fb13(0x180)][_0x13fb13(0x1d2)]='none';}else{if(_0x28f1f1){_0x28f1f1[_0x13fb13(0x180)][_0x13fb13(0x1d2)]=_0x13fb13(0x172);const _0x4aefdc=Math[_0x13fb13(0x16d)](_0x2f91d4[_0x13fb13(0x1bb)]/0x3c),_0x46eecb=Math['floor'](_0x2f91d4[_0x13fb13(0x1bb)]%0x3c);document[_0x13fb13(0x189)](_0x13fb13(0x1b4))[_0x13fb13(0x19b)]=_0x4d1345?_0x2ec268?'SOSPESO':_0x4aefdc[_0x13fb13(0x1ef)]()[_0x13fb13(0x1e2)](0x2,'0')+':'+_0x46eecb[_0x13fb13(0x1ef)]()[_0x13fb13(0x1e2)](0x2,'0'):_0x13fb13(0x185),document[_0x13fb13(0x189)](_0x13fb13(0x1b4))[_0x13fb13(0x180)][_0x13fb13(0x1ed)]=_0x2ec268?'var(--blocked)':'var(--gold)',document[_0x13fb13(0x189)](_0x13fb13(0x1b4))['style'][_0x13fb13(0x184)]=_0x2ec268?'rgba(239,\x2068,\x2068,\x200.15)':_0x13fb13(0x1ca);}}document[_0x13fb13(0x189)]('view-money')['innerText']=_0x4d1345?_0x2f91d4[_0x13fb13(0x1da)][_0x13fb13(0x1dc)](0x2)+'€':'---€';let _0xdcbb67=_0x13fb13(0x1a3);if(_0x2f91d4[_0x13fb13(0x1d1)]){const _0x56fa98=new Date(_0x2f91d4[_0x13fb13(0x1d1)]),_0x35c001=new Date(),_0x40c266=_0x56fa98[_0x13fb13(0x190)]()===_0x35c001[_0x13fb13(0x190)](),_0x1a11be=_0x40c266?{'hour':'2-digit','minute':'2-digit'}:{'day':'2-digit','month':'2-digit','hour':_0x13fb13(0x174),'minute':_0x13fb13(0x174)};_0xdcbb67=_0x13fb13(0x1c3)+_0x56fa98[_0x13fb13(0x1e7)](_0x13fb13(0x199),_0x1a11be);}document[_0x13fb13(0x189)](_0x13fb13(0x1aa))[_0x13fb13(0x19b)]=_0x4d1345?_0x13fb13(0x1c2):_0xdcbb67,document['getElementById']('wifi-indicator')[_0x13fb13(0x1ec)]=_0x4d1345?getWifiIcon(_0x2f91d4[_0x13fb13(0x1d8)]):'OFFLINE',document['getElementById'](_0x13fb13(0x1d6))['disabled']=_0x2ec268,document[_0x13fb13(0x189)](_0x13fb13(0x1d6))['style'][_0x13fb13(0x162)]=_0x2ec268?_0x13fb13(0x168):'1';document[_0x13fb13(0x188)]['tagName']!==_0x13fb13(0x1b3)&&(document[_0x13fb13(0x189)]('set-dev-name')[_0x13fb13(0x187)]=_0x2f91d4[_0x13fb13(0x1af)]||'');const _0x392aac=document[_0x13fb13(0x189)](_0x13fb13(0x16a)),_0x1ee348=document[_0x13fb13(0x189)](_0x13fb13(0x1db));!_0x2ec268&&_0x392aac&&document[_0x13fb13(0x188)]['tagName']!==_0x13fb13(0x1b3)&&(_0x4a2b4b?(_0x392aac[_0x13fb13(0x1ec)]=_0x13fb13(0x1df),document[_0x13fb13(0x189)](_0x13fb13(0x1c7))[_0x13fb13(0x187)]=_0x2f91d4[_0x13fb13(0x1ba)]!==undefined?_0x2f91d4[_0x13fb13(0x1ba)]:0x0,document[_0x13fb13(0x189)](_0x13fb13(0x173))['value']=_0x2f91d4[_0x13fb13(0x182)]!==undefined?_0x2f91d4['imp_c']:0x0,document[_0x13fb13(0x189)](_0x13fb13(0x1b5))[_0x13fb13(0x187)]=_0x2f91d4['val_u']!==undefined?_0x2f91d4[_0x13fb13(0x179)]:0x0,document[_0x13fb13(0x189)](_0x13fb13(0x16e))['value']=_0x2f91d4[_0x13fb13(0x18e)]!==undefined?_0x2f91d4['t_max']:0x0):(_0x392aac[_0x13fb13(0x1ec)]='\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<span\x20class=\x22section-title\x22>Parametri\x20Modulo\x20Timer</span>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22row\x22><span>Sec\x20per\x20Scatto:</span><input\x20type=\x22number\x22\x20id=\x22set-sec-p\x22></div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22row\x22><span>Impulsi\x20Minimi:</span><input\x20type=\x22number\x22\x20id=\x22set-min-i\x22></div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22row\x22><span>Valore\x20Scatto\x20€:</span><input\x20type=\x22number\x22\x20step=\x220.1\x22\x20id=\x22set-c-val\x22></div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<button\x20class=\x22btn-cmd\x22\x20style=\x22background:\x20#10b981;\x20box-shadow:\x200\x204px\x2012px\x20rgba(16,\x20185,\x20129,\x200.25);\x22\x20onclick=\x22saveParams(\x27timer\x27)\x22>SALVA\x20PARAMETRI</button>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20',document[_0x13fb13(0x189)](_0x13fb13(0x1c6))[_0x13fb13(0x187)]=_0x2f91d4['sec_p']!==undefined?_0x2f91d4[_0x13fb13(0x18b)]:0x0,document[_0x13fb13(0x189)](_0x13fb13(0x19c))['value']=_0x2f91d4[_0x13fb13(0x1eb)]!==undefined?_0x2f91d4[_0x13fb13(0x1eb)]:0x0,document[_0x13fb13(0x189)]('set-c-val')[_0x13fb13(0x187)]=_0x2f91d4['c_val']!==undefined?_0x2f91d4['c_val']:0x0));if(_0x2ec268){if(_0x392aac)_0x392aac[_0x13fb13(0x1ec)]='';_0x1ee348&&(_0x1ee348['innerHTML']=_0x13fb13(0x178));}else _0x1ee348&&(_0x1ee348['innerHTML']='\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<span\x20class=\x22section-title\x22>Azioni\x20Rapide</span>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20style=\x22display:\x20grid;\x20grid-template-columns:\x201fr\x201fr;\x20gap:\x2012px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<button\x20class=\x22btn-cmd\x22\x20style=\x22background:\x20var(--accent);\x20box-shadow:\x200\x204px\x2012px\x20var(--accent-glow);\x22\x20onclick=\x22sendCmd(\x27REMOTE_START\x27)\x22>AVVIA</button>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<button\x20class=\x22btn-cmd\x22\x20style=\x22background:\x20#ef4444;\x20box-shadow:\x200\x204px\x2012px\x20rgba(239,\x2068,\x2068,\x200.25);\x22\x20onclick=\x22sendCmd(\x27REMOTE_STOP\x27)\x22>FERMA</button>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<button\x20class=\x22btn-cmd\x22\x20style=\x22background:\x20#334155;\x20margin-top:\x2012px;\x20font-size:\x2013px;\x20color:\x20#cbd5e1;\x22\x20onclick=\x22sendCmd(\x27RESET_TOTAL\x27)\x22>AZZERA\x20CONTATORE\x20INCASSI</button>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20');}function saveParams(_0x526df5){const _0x329b4b=_0x122d;if(!selectedMac)return;const _0x557fbb=document[_0x329b4b(0x189)](_0x329b4b(0x1d6))[_0x329b4b(0x187)];devices[selectedMac]&&(devices[selectedMac][_0x329b4b(0x1af)]=_0x557fbb,localStorage[_0x329b4b(0x1b0)](_0x329b4b(0x19f),JSON[_0x329b4b(0x1d9)](devices)));let _0x541c45={'dev':_0x557fbb};_0x526df5===_0x329b4b(0x1e4)?(_0x541c45[_0x329b4b(0x1e9)]=parseFloat(document[_0x329b4b(0x189)]('set-costo-b')[_0x329b4b(0x187)]),_0x541c45[_0x329b4b(0x1e5)]=parseInt(document[_0x329b4b(0x189)](_0x329b4b(0x173))[_0x329b4b(0x187)]),_0x541c45[_0x329b4b(0x195)]=parseFloat(document[_0x329b4b(0x189)](_0x329b4b(0x1b5))['value']),_0x541c45[_0x329b4b(0x1bd)]=parseInt(document['getElementById']('set-t-max')['value'])):(_0x541c45[_0x329b4b(0x18b)]=parseInt(document['getElementById'](_0x329b4b(0x1c6))[_0x329b4b(0x187)]),_0x541c45[_0x329b4b(0x1eb)]=parseInt(document['getElementById'](_0x329b4b(0x19c))[_0x329b4b(0x187)]),_0x541c45[_0x329b4b(0x195)]=parseFloat(document[_0x329b4b(0x189)]('set-c-val')[_0x329b4b(0x187)])),mqttClient[_0x329b4b(0x1e1)](_0x329b4b(0x1c8)+selectedMac,JSON[_0x329b4b(0x1d9)](_0x541c45)),alert(_0x329b4b(0x1d4)),closePop(),renderGrid();}function sendCmd(_0x3badb3){const _0x568b68=_0x122d;if(!selectedMac)return;if(_0x3badb3===_0x568b68(0x1c9)){const _0x36fdf4=confirm(_0x568b68(0x1dd));if(!_0x36fdf4)return;}mqttClient[_0x568b68(0x1e1)](_0x568b68(0x1c8)+selectedMac,JSON[_0x568b68(0x1d9)]({'cmd':_0x3badb3}));}function logout(){const _0x2695a2=_0x122d;confirm(_0x2695a2(0x1e6))&&(localStorage[_0x2695a2(0x170)]('cas_saved_pin'),localStorage['removeItem'](_0x2695a2(0x19f)),location[_0x2695a2(0x177)]());}function closePop(){const _0x5b67dc=_0x122d;document[_0x5b67dc(0x189)](_0x5b67dc(0x1a1))[_0x5b67dc(0x180)][_0x5b67dc(0x1d2)]=_0x5b67dc(0x1e0),selectedMac=null;}
+        let currentUser = null;
+        let devices = {};
+        let selectedMac = null;
+        let mqttClient = null;
+
+        window.onload = function() {
+            const savedPin = localStorage.getItem("cas_saved_pin");
+            if (savedPin) checkLogin(savedPin);
+        };
+
+        async function checkLogin(providedPin = null) {
+            const pin = providedPin || document.getElementById("pinInput").value;
+            try {
+                const r = await fetch(`database_clienti.json?v=${Date.now()}`);
+                const db = await r.json();
+                if (db[pin]) {
+                    if (!providedPin) localStorage.setItem("cas_saved_pin", pin);
+                    currentUser = db[pin];
+                    const today = new Date();
+                    const exp = new Date(currentUser.scadenza);
+                    if (today > exp) {
+                        document.getElementById("login-screen").style.display = "none";
+                        document.getElementById("expired-screen").style.display = "flex";
+                        document.getElementById("expiredDateInfo").innerText = "Scaduta il: " + exp.toLocaleDateString('it-IT');
+                    } else {
+                        startApp();
+                    }
+                } else {
+                    if (providedPin) localStorage.removeItem("cas_saved_pin");
+                    else alert("PIN Errato");
+                }
+            } catch(e) {}
+        }
+
+        function startApp() {
+            const cache = localStorage.getItem("cas_device_cache");
+            if(cache) devices = JSON.parse(cache);
+
+            document.getElementById("login-screen").style.display = "none";
+            document.getElementById("main-screen").style.display = "block";
+            document.getElementById("clientName").innerText = currentUser.nome;
+            
+            const expiryDate = new Date(currentUser.scadenza);
+            document.getElementById("expiryDisplay").innerText = "Scadenza: " + expiryDate.toLocaleDateString('it-IT');
+
+            const today = new Date();
+            const diffTime = expiryDate - today;
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+            if (diffDays <= 7 && diffDays > 0) {
+                const banner = document.getElementById("renewalBanner");
+                const waLink = document.getElementById("whatsappLink");
+                
+                const messaggio = encodeURIComponent(
+                    `Ciao! Vorrei rinnovare la licenza per il sistema CAS GESTIONALE REMOTO.\n\n` +
+                    `Cliente: ${currentUser.nome}\n` +
+                    `Scadenza attuale: ${expiryDate.toLocaleDateString('it-IT')}\n\n` +
+                    `Piani di rinnovo:\n` +
+                    `- 1 Mese: 10€\n` +
+                    `- 6 Mesi: 50€ (1 Mese Gratis)\n` +
+                    `- 12 Mesi: 90€ (3 Mesi Gratis)`
+                );
+
+                banner.style.display = "block";
+                waLink.href = `https://wa.me/393273524945?text=${messaggio}`;
+                document.getElementById("expiryDisplay").style.background = "#ef4444";
+                document.getElementById("expiryDisplay").style.color = "#fff";
+                document.getElementById("expiryDisplay").style.borderColor = "transparent";
+            }
+
+            mqttClient = mqtt.connect('wss://4c3d155d119d45b48f9a1d88d1963d9a.s1.eu.hivemq.cloud:8884/mqtt', {
+                username: 'admin_cas_system',
+                password: 'CAS_gate_2026!#',
+                clientId: 'WEB_' + Math.random().toString(16).substr(2, 5)
+            });
+
+            mqttClient.on('connect', () => {
+                currentUser.mac.forEach(m => mqttClient.subscribe(`cas_system/status/${m.trim().toUpperCase()}`));
+            });
+
+            mqttClient.on('message', (topic, msg) => {
+                try {
+                    const data = JSON.parse(msg.toString());
+                    const m = data.mac.toUpperCase();
+                    
+                    const oraAttuale = Math.floor(Date.now() / 1000);
+                    
+                    if (data.ts && data.ts !== 0) {
+                        if (Math.abs(oraAttuale - data.ts) > 300) {
+                            return;
+                        }
+                    }
+
+                    if(data.status === "offline") {
+                        if(devices[m]) devices[m].forcedOffline = true;
+                    } else {
+                        devices[m] = { ...data, lastSeen: Date.now(), forcedOffline: false };
+                        localStorage.setItem("cas_device_cache", JSON.stringify(devices));
+                    }
+                    renderGrid();
+                    updateGrandTotal();
+                    if(selectedMac === m) updatePopupData(devices[m]);
+                } catch(e) {}
+            });
+
+            setInterval(renderGrid, 3000);
+            renderGrid();
+            updateGrandTotal();
+        }
+
+        function updateGrandTotal() {
+            let grandTotal = 0;
+            Object.values(devices).forEach(d => {
+                const isOnline = d && (Date.now() - d.lastSeen < 12000) && !d.forcedOffline;
+                if(isOnline && d.money) grandTotal += d.money;
+            });
+            document.getElementById("grand-total").innerText = grandTotal.toFixed(2) + "€";
+        }
+
+        function getWifiIcon(rssi) {
+            let bars = 0;
+            if (rssi > -60) bars = 4;
+            else if (rssi > -70) bars = 3;
+            else if (rssi > -80) bars = 2;
+            else if (rssi > -90) bars = 1;
+            let html = '<div class="wifi-bar-container">';
+            for(let i=1; i<=4; i++) {
+                let color = i <= bars ? 'var(--online)' : '#334155';
+                html += `<div class="wifi-bar" style="height:${i*4}px; background:${color}"></div>`;
+            }
+            return html + '</div>';
+        }
+
+        function renderGrid() {
+            const container = document.getElementById("deviceGrid");
+            if (!container) return;
+            container.innerHTML = "";
+            currentUser.mac.forEach(m => {
+                const mac = m.trim().toUpperCase();
+                const d = devices[mac];
+                const isOnline = d && (Date.now() - d.lastSeen < 12000) && !d.forcedOffline;
+                const isBlocked = d && d.blocked === true;
+                const label = (d && d.dev) ? d.dev : "MODULO " + mac.slice(-5);
+                const card = document.createElement("div");
+                card.className = "device-card";
+                card.onclick = () => openPop(mac);
+                
+                let dotClass = 'offline';
+                if (isOnline) {
+                    dotClass = isBlocked ? 'blocked-status' : 'online';
+                }
+
+                const isCoffee = d && d.type === "coffee";
+
+                let timerHtml = "";
+                if (!isCoffee) {
+                    const min = (d && isOnline) ? Math.floor(d.sec / 60) : 0;
+                    const sec = (d && isOnline) ? Math.floor(d.sec % 60) : 0;
+                    const timerColorStyle = isBlocked ? 'color: var(--blocked); background: rgba(239, 68, 68, 0.15); font-weight: bold;' : '';
+                    timerHtml = `
+                        <div class="timer-val" style="${timerColorStyle}">
+                            ${isBlocked ? 'SOSPESO' : min.toString().padStart(2,'0') + ':' + sec.toString().padStart(2,'0')}
+                        </div>
+                    `;
+                }
+
+                card.innerHTML = `
+                    <div class="status-dot ${dotClass}"></div>
+                    <span class="dev-name-label">${label} ${isBlocked ? '⚠️' : ''}</span>
+                    <div class="money-val">${(d && isOnline) ? d.money.toFixed(2) : '---'}€</div>
+                    ${timerHtml}
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function openPop(mac) {
+            selectedMac = mac;
+            if(devices[mac]) {
+                const d = devices[mac];
+                const isCoffee = d && d.type === "coffee";
+                const iconaModulo = isCoffee ? " ☕" : " ⏱️";
+                document.getElementById("popTitle").innerText = "MODULO" + iconaModulo;
+                updatePopupData(d);
+            }
+            document.getElementById("overlay").style.display = "flex";
+        }
+
+        function updatePopupData(d) {
+            const isOnline = d && (Date.now() - d.lastSeen < 12000) && !d.forcedOffline;
+            const isBlocked = d && d.blocked === true;
+            const isCoffee = d && d.type === "coffee";
+            
+            const timerRow = document.getElementById("popup-timer-row");
+            if (isCoffee) {
+                if (timerRow) timerRow.style.display = "none";
+            } else {
+                if (timerRow) {
+                    timerRow.style.display = "flex";
+                    const min = Math.floor(d.sec / 60);
+                    const sec = Math.floor(d.sec % 60);
+                    document.getElementById("view-sec").innerText = isOnline ? (isBlocked ? "SOSPESO" : `${min.toString().padStart(2,'0')}:${sec.toString().padStart(2,'0')}`) : "--:--";
+                    document.getElementById("view-sec").style.color = isBlocked ? "var(--blocked)" : "var(--gold)";
+                    document.getElementById("view-sec").style.background = isBlocked ? "rgba(239, 68, 68, 0.15)" : "rgba(245, 158, 11, 0.1)";
+                }
+            }
+            
+            document.getElementById("view-money").innerText = isOnline ? d.money.toFixed(2) + "€" : "---€";
+            
+            let lastSeenText = "Mai ricevuto";
+            if (d.lastSeen) {
+                const lastSeenDate = new Date(d.lastSeen);
+                const oggi = new Date();
+                const èOggi = lastSeenDate.toLocaleDateString() === oggi.toLocaleDateString();
+                const opzioni = èOggi 
+                    ? { hour: '2-digit', minute: '2-digit' } 
+                    : { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' };
+                    
+                lastSeenText = "Ultimo segnale: " + lastSeenDate.toLocaleString('it-IT', opzioni);
+            }
+            
+            document.getElementById("view-lastseen").innerText = isOnline ? "In tempo reale" : lastSeenText;
+            document.getElementById("wifi-indicator").innerHTML = isOnline ? getWifiIcon(d.rssi) : "OFFLINE";
+            
+            document.getElementById("set-dev-name").disabled = isBlocked;
+            document.getElementById("set-dev-name").style.opacity = isBlocked ? "0.5" : "1";
+            
+            if(document.activeElement.tagName !== 'INPUT') {
+                document.getElementById("set-dev-name").value = d.dev || "";
+            }
+
+            const paramsSection = document.getElementById("params-section");
+            const actionsSection = document.getElementById("actions-section");
+
+            if (!isBlocked && paramsSection && document.activeElement.tagName !== 'INPUT') {
+                if (isCoffee) {
+                    paramsSection.innerHTML = `
+                        <span class="section-title">Parametri Macchina Caffè</span>
+                        <div class="row"><span>Costo Bevanda €:</span><input type="number" step="0.10" id="set-costo-b"></div>
+                        <div class="row"><span>Impulsi per Credito:</span><input type="number" id="set-imp-c"></div>
+                        <div class="row"><span>Valore Unità Credito €:</span><input type="number" step="0.01" id="set-val-u"></div>
+                        <div class="row"><span>Tempo Max Erog. (sec):</span><input type="number" id="set-t-max"></div>
+                        <button class="btn-cmd" style="background: #10b981; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);" onclick="saveParams('coffee')">SALVA PARAMETRI</button>
+                    `;
+                    document.getElementById("set-costo-b").value = d.costo_b !== undefined ? d.costo_b : 0;
+                    document.getElementById("set-imp-c").value = d.imp_c !== undefined ? d.imp_c : 0;
+                    document.getElementById("set-val-u").value = d.val_u !== undefined ? d.val_u : 0;
+                    document.getElementById("set-t-max").value = d.t_max !== undefined ? d.t_max : 0;
+                } else {
+                    paramsSection.innerHTML = `
+                        <span class="section-title">Parametri Modulo Timer</span>
+                        <div class="row"><span>Sec per Scatto:</span><input type="number" id="set-sec-p"></div>
+                        <div class="row"><span>Impulsi Minimi:</span><input type="number" id="set-min-i"></div>
+                        <div class="row"><span>Valore Scatto €:</span><input type="number" step="0.1" id="set-c-val"></div>
+                        <button class="btn-cmd" style="background: #10b981; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);" onclick="saveParams('timer')">SALVA PARAMETRI</button>
+                    `;
+                    document.getElementById("set-sec-p").value = d.sec_p !== undefined ? d.sec_p : 0;
+                    document.getElementById("set-min-i").value = d.min_i !== undefined ? d.min_i : 0;
+                    document.getElementById("set-c-val").value = d.c_val !== undefined ? d.c_val : 0;
+                }
+            }
+
+            if (isBlocked) {
+                if (paramsSection) paramsSection.innerHTML = "";
+                if (actionsSection) {
+                    actionsSection.innerHTML = `
+                        <span class="section-title" style="color: var(--blocked); font-weight: bold;">⚠️ STATO DISPOSITIVO</span>
+                        <div style="background: #450a0a; padding: 15px; border-radius: 14px; border: 1px solid #ef4444; text-align: center; color: #f87171; font-size: 13px; line-height: 1.4; font-weight: 500;">
+                            <strong>SERVIZIO TEMPORANEAMENTE SOSPESO</strong><br>
+                            Contattare l'amministratore del sistema per informazioni o per richiedere lo sblocco del modulo.
+                        </div>
+                    `;
+                }
+            } else {
+                if (actionsSection) {
+                    actionsSection.innerHTML = `
+                        <span class="section-title">Azioni Rapide</span>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                            <button class="btn-cmd" style="background: var(--accent); box-shadow: 0 4px 12px var(--accent-glow);" onclick="sendCmd('REMOTE_START')">AVVIA</button>
+                            <button class="btn-cmd" style="background: #ef4444; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.25);" onclick="sendCmd('REMOTE_STOP')">FERMA</button>
+                        </div>
+                        <button class="btn-cmd" style="background: #334155; margin-top: 12px; font-size: 13px; color: #cbd5e1;" onclick="sendCmd('RESET_TOTAL')">AZZERA CONTATORE INCASSI</button>
+                    `;
+                }
+            }
+        }
+
+        function saveParams(tipoErogatore) {
+            if(!selectedMac) return;
+            const newName = document.getElementById("set-dev-name").value;
+            
+            if(devices[selectedMac]) {
+                devices[selectedMac].dev = newName;
+                localStorage.setItem("cas_device_cache", JSON.stringify(devices));
+            }
+
+            let payload = { dev: newName };
+
+            if (tipoErogatore === 'coffee') {
+    payload.costo_b = parseFloat(document.getElementById("set-costo-b").value);
+    payload.imp_c = parseInt(document.getElementById("set-imp-c").value);
+    payload.val_u = parseFloat(document.getElementById("set-val-u").value);
+    payload.t_max = parseInt(document.getElementById("set-t-max").value);
+} else {
+                payload.sec_p = parseInt(document.getElementById("set-sec-p").value);
+                payload.min_i = parseInt(document.getElementById("set-min-i").value);
+                payload.c_val = parseFloat(document.getElementById("set-c-val").value);
+            }
+
+            mqttClient.publish(`cas_system/cmd/${selectedMac}`, JSON.stringify(payload));
+            alert("Parametri inviati con successo!");
+            closePop();
+            renderGrid();
+        }
+
+        function sendCmd(cmd) {
+            if(!selectedMac) return;
+            if (cmd === 'RESET_TOTAL') {
+                const conferma = confirm("ATTENZIONE: Stai per azzerare l'incasso totale di questo modulo. L'azione non è reversibile. Vuoi procedere?");
+                if (!conferma) return;
+            }
+            mqttClient.publish(`cas_system/cmd/${selectedMac}`, JSON.stringify({ cmd: cmd }));
+        }
+
+        function logout() {
+            if(confirm("Uscire?")) {
+                localStorage.removeItem("cas_saved_pin");
+                localStorage.removeItem("cas_device_cache");
+                location.reload();
+            }
+        }
+
+        function closePop() { document.getElementById("overlay").style.display = "none"; selectedMac = null; }
     </script>
 </body>
 </html>
