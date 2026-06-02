@@ -9,64 +9,367 @@
 
     <link rel="icon" type="image/png" sizes="192x192" href="icona-cas.png">
     <link class="apple-touch-icon" href="icona-cas.png">
-    <meta name="theme-color" content="#0f172a">
+    <meta name="theme-color" content="#090d16">
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mqtt/4.3.7/mqtt.min.js"></script>
 
     <style>
-        :root { --bg: #0f172a; --card: #1e293b; --accent: #3b82f6; --text: #f8fafc; --online: #10b981; --offline: #ef4444; --border: #334155; --expired: #f87171; --blocked: #ef4444; }
-        body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 0; }
+        :root { 
+            --bg: #090d16; 
+            --card: #131c2e; 
+            --card-hover: #1b2741;
+            --accent: #2563eb; 
+            --accent-glow: rgba(37, 99, 235, 0.4);
+            --text: #f8fafc; 
+            --text-muted: #94a3b8;
+            --online: #10b981; 
+            --offline: #64748b; 
+            --border: #1e293b; 
+            --expired: #f87171; 
+            --blocked: #ef4444; 
+            --gold: #f59e0b;
+        }
+
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+            background: var(--bg); 
+            color: var(--text); 
+            margin: 0; 
+            padding: 0; 
+            -webkit-font-smoothing: antialiased;
+        }
         
-        #login-screen, #expired-screen { display: flex; align-items: center; justify-content: center; height: 100vh; text-align: center; padding: 20px; box-sizing: border-box; }
-        #expired-screen { display: none; flex-direction: column; background: #450a0a; }
+        /* Schermate Intere */
+        #login-screen, #expired-screen { 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            min-height: 100vh; 
+            padding: 20px; 
+            box-sizing: border-box;
+            background: radial-gradient(circle at top, #14223d 0%, var(--bg) 100%);
+        }
+        #expired-screen { 
+            display: none; 
+            flex-direction: column; 
+            background: radial-gradient(circle at top, #450a0a 0%, #0f0202 100%); 
+            text-align: center;
+        }
         
-        #main-screen { display: none; padding: 20px; }
-        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; border-bottom: 1px solid var(--border); padding-bottom: 15px; }
+        #main-screen { 
+            display: none; 
+            padding: 20px; 
+            max-width: 1200px;
+            margin: 0 auto;
+            box-sizing: border-box;
+        }
+
+        header { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            margin-bottom: 30px; 
+            border-bottom: 1px solid var(--border); 
+            padding-bottom: 20px; 
+            padding-top: 10px;
+        }
+
+        header h2 {
+            font-size: 22px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
         
         /* Banner Rinnovo */
         .renewal-banner { 
-            display: none; background: #f59e0b; color: #000; padding: 15px; text-align: center; 
-            font-weight: bold; font-size: 14px; border-bottom: 2px solid #d97706; position: sticky; top: 0; z-index: 999;
+            display: none; 
+            background: linear-gradient(90deg, #f59e0b 0%, #d97706 100%); 
+            color: #000; 
+            padding: 14px; 
+            text-align: center; 
+            font-weight: 800; 
+            font-size: 13px; 
+            letter-spacing: 0.5px;
+            box-shadow: 0 4px 15px rgba(217, 119, 6, 0.3);
+            position: sticky; 
+            top: 0; 
+            z-index: 999;
+            animation: slideDown 0.4s ease;
         }
-        .renewal-banner a { color: #000; text-decoration: underline; display: block; margin-top: 5px; text-transform: uppercase; }
+        .renewal-banner a { 
+            color: #000; 
+            text-decoration: none; 
+            display: inline-block; 
+            margin-left: 10px;
+            padding: 2px 10px;
+            background: #fff;
+            border-radius: 20px;
+            font-size: 11px;
+            text-transform: uppercase; 
+            box-shadow: 0 2px 5px rgba(0,0,0,0.15);
+            transition: 0.2s;
+        }
+        .renewal-banner a:hover { transform: scale(1.05); }
 
+        /* Scatola Incasso */
         .total-revenue-box { 
-            background: linear-gradient(135deg, var(--card) 0%, #1e293b 100%);
-            padding: 25px; border-radius: 20px; margin-bottom: 25px; text-align: center; border: 2px solid var(--accent);
-            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.2);
+            background: linear-gradient(135deg, #131c35 0%, #0d1527 100%);
+            padding: 30px 20px; 
+            border-radius: 24px; 
+            margin-bottom: 30px; 
+            text-align: center; 
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), inset 0 1px 1px rgba(255,255,255,0.1);
+            position: relative;
+            overflow: hidden;
         }
-        .total-label { font-size: 14px; color: var(--accent); font-weight: bold; text-transform: uppercase; letter-spacing: 1px; display: block; margin-bottom: 5px; }
-        .total-amount { font-size: 38px; font-weight: 900; color: var(--text); }
+        .total-revenue-box::before {
+            content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
+            background: radial-gradient(circle, rgba(37, 99, 235, 0.1) 0%, transparent 60%);
+            pointer-events: none;
+        }
+        .total-label { 
+            font-size: 12px; 
+            color: var(--text-muted); 
+            font-weight: 700; 
+            text-transform: uppercase; 
+            letter-spacing: 1.5px; 
+            display: block; 
+            margin-bottom: 8px; 
+        }
+        .total-amount { 
+            font-size: 46px; 
+            font-weight: 900; 
+            color: #fff; 
+            letter-spacing: -1px;
+            text-shadow: 0 2px 10px rgba(255,255,255,0.05);
+        }
 
-        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 15px; }
-        .device-card { background: var(--card); padding: 20px; border-radius: 15px; text-align: center; position: relative; border: 2px solid var(--border); cursor: pointer; transition: 0.3s; }
-        .device-card:hover { border-color: var(--accent); }
-        .status-dot { position: absolute; top: 12px; right: 12px; width: 12px; height: 12px; border-radius: 50%; }
-        .online { background: var(--online); box-shadow: 0 0 8px var(--online); }
-        .offline { background: var(--offline); }
-        .blocked-status { background: var(--blocked); box-shadow: 0 0 8px var(--blocked); }
+        /* Griglia e Card */
+        .grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); 
+            gap: 20px; 
+        }
+        .device-card { 
+            background: var(--card); 
+            padding: 24px 16px; 
+            border-radius: 20px; 
+            text-align: center; 
+            position: relative; 
+            border: 1px solid var(--border); 
+            cursor: pointer; 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
+        }
+        .device-card:hover { 
+            border-color: #3b82f6; 
+            background: var(--card-hover);
+            transform: translateY(-4px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.4), 0 0 15px rgba(59, 130, 246, 0.15);
+        }
         
-        .dev-name-label { font-size: 13px; font-weight: bold; color: #94a3b8; margin-bottom: 8px; display: block; text-transform: uppercase; }
-        .money-val { font-size: 24px; font-weight: bold; color: var(--accent); margin: 5px 0; }
-        .timer-val { font-size: 18px; font-family: monospace; color: #fbbf24; }
+        /* Pallini Stato */
+        .status-dot { 
+            position: absolute; 
+            top: 16px; 
+            right: 16px; 
+            width: 10px; 
+            height: 10px; 
+            border-radius: 50%; 
+        }
+        .online { 
+            background: var(--online); 
+            box-shadow: 0 0 10px var(--online); 
+            animation: pulse 2s infinite;
+        }
+        .offline { background: var(--offline); box-shadow: none; }
+        .blocked-status { 
+            background: var(--blocked); 
+            box-shadow: 0 0 10px var(--blocked); 
+            animation: pulse 1.5s infinite;
+        }
+        
+        .dev-name-label { 
+            font-size: 11px; 
+            font-weight: 700; 
+            color: var(--text-muted); 
+            margin-bottom: 12px; 
+            display: block; 
+            text-transform: uppercase; 
+            letter-spacing: 0.8px;
+        }
+        .money-val { 
+            font-size: 28px; 
+            font-weight: 800; 
+            color: #fff; 
+            margin: 8px 0; 
+            letter-spacing: -0.5px;
+        }
+        .timer-val { 
+            font-size: 16px; 
+            font-family: 'SF Mono', SFMono-Regular, ui-monospace, monospace; 
+            color: var(--gold); 
+            font-weight: 600;
+            background: rgba(245, 158, 11, 0.1);
+            padding: 4px 10px;
+            border-radius: 8px;
+            display: inline-block;
+            margin-top: 4px;
+        }
 
-        #overlay { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:100; overflow-y: auto; padding: 20px; box-sizing: border-box; }
-        .popup { background: var(--card); width: 100%; max-width: 500px; border-radius: 20px; padding: 25px; margin: auto; border: 1px solid var(--border); }
-        .section { background: var(--bg); padding: 12px; border-radius: 12px; margin-bottom: 15px; border: 1px solid var(--border); }
-        .section-title { font-size: 11px; color: var(--accent); font-weight: bold; text-transform: uppercase; margin-bottom: 8px; display: block; }
+        /* Overlay e Popup Moderni */
+        #overlay { 
+            display: none; 
+            position: fixed; 
+            top: 0; left: 0; width: 100%; height: 100%; 
+            background: rgba(4, 7, 13, 0.85); 
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            z-index: 100; 
+            overflow-y: auto; 
+            padding: 20px; 
+            box-sizing: border-box; 
+        }
+        .popup { 
+            background: #111a2e; 
+            width: 100%; 
+            max-width: 460px; 
+            border-radius: 28px; 
+            padding: 30px; 
+            margin: auto; 
+            border: 1px solid rgba(255,255,255,0.05); 
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+            box-sizing: border-box;
+            animation: scaleUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .section { 
+            background: #17233c; 
+            padding: 18px; 
+            border-radius: 18px; 
+            margin-bottom: 18px; 
+            border: 1px solid rgba(255,255,255,0.03); 
+        }
+        .section-title { 
+            font-size: 11px; 
+            color: #60a5fa; 
+            font-weight: 800; 
+            text-transform: uppercase; 
+            margin-bottom: 14px; 
+            display: block; 
+            letter-spacing: 1px;
+        }
         
-        .row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-size: 14px; }
-        input { background: #1e293b; border: 1px solid var(--border); color: white; padding: 8px; border-radius: 5px; width: 100px; text-align: right; }
-        input.wide { width: 180px; text-align: left; }
+        .row { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            margin-bottom: 12px; 
+            font-size: 14px; 
+            color: #e2e8f0;
+        }
+        .row:last-child { margin-bottom: 0; }
+
+        /* Input ed Elementi di Form */
+        input { 
+            background: #0d1527; 
+            border: 1px solid #2e3f5b; 
+            color: white; 
+            padding: 10px 14px; 
+            border-radius: 10px; 
+            width: 110px; 
+            text-align: right; 
+            font-size: 14px;
+            font-weight: 600;
+            transition: 0.2s;
+            outline: none;
+        }
+        input:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+        }
+        input.wide { width: 100%; max-width: 200px; text-align: left; }
         
-        .wifi-bar-container { display: flex; align-items: center; gap: 4px; }
-        .wifi-bar { width: 4px; border-radius: 1px; background: #475569; }
+        .wifi-bar-container { display: flex; align-items: flex-end; gap: 3px; height: 18px; }
+        .wifi-bar { width: 4px; border-radius: 2px; background: #334155; transition: 0.3s; }
         
-        .btn-cmd { width: 100%; padding: 12px; border-radius: 10px; border: none; font-weight: bold; color: white; cursor: pointer; margin-top: 10px; transition: 0.2s; }
-        .close-btn { background: #ef4444; color: white; border: none; padding: 10px 20px; border-radius: 8px; width: 100%; margin-top: 20px; cursor: pointer; }
+        /* Bottoni */
+        .btn-cmd { 
+            width: 100%; 
+            padding: 14px; 
+            border-radius: 12px; 
+            border: none; 
+            font-weight: 700; 
+            font-size: 14px;
+            color: white; 
+            cursor: pointer; 
+            margin-top: 10px; 
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            transition: all 0.2s; 
+        }
+        .btn-cmd:active { transform: scale(0.98); opacity: 0.9; }
+        .btn-cmd:hover { filter: brightness(1.1); }
         
-        .scadenza-box { font-size: 12px; font-weight: bold; padding: 4px 8px; border-radius: 5px; background: #334155; }
-        .logout-btn { background: #ef4444; color: white; border: none; padding: 8px 15px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 12px; }
+        .close-btn { 
+            background: #1e293b; 
+            color: #94a3b8; 
+            border: 1px solid #334155; 
+            padding: 12px; 
+            border-radius: 12px; 
+            width: 100%; 
+            margin-top: 12px; 
+            cursor: pointer; 
+            font-weight: 700;
+            font-size: 14px;
+            transition: 0.2s;
+        }
+        .close-btn:hover { background: #334155; color: #fff; }
+        
+        .scadenza-box { 
+            font-size: 11px; 
+            font-weight: 700; 
+            padding: 5px 10px; 
+            border-radius: 20px; 
+            background: #1e293b; 
+            color: var(--text-muted);
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+        .logout-btn { 
+            background: transparent; 
+            color: #ef4444; 
+            border: 1px solid rgba(239, 68, 68, 0.3); 
+            padding: 8px 16px; 
+            border-radius: 20px; 
+            cursor: pointer; 
+            font-weight: 700; 
+            font-size: 12px; 
+            transition: 0.2s;
+        }
+        .logout-btn:hover { background: rgba(239, 68, 68, 0.1); border-color: #ef4444; }
+
+        /* Animazioni */
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.2); opacity: 0.7; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        @keyframes scaleUp {
+            from { transform: scale(0.95); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+        @keyframes slideDown {
+            from { transform: translateY(-100%); }
+            to { transform: translateY(0); }
+        }
+
+        /* Ottimizzazione Campi Login */
+        #login-screen input[type="password"] {
+            box-sizing: border-box;
+            letter-spacing: 6px;
+            border-radius: 14px;
+            background: #090d16;
+            border-color: #334155;
+        }
     </style>
 </head>
 <body>
@@ -77,25 +380,28 @@
     </div>
 
     <div id="login-screen">
-        <div style="background:var(--card); padding:30px; border-radius:20px; width:100%; max-width:320px; border:1px solid var(--border);">
-            <h2 style="color:var(--accent); margin-bottom:20px;">C.A.S. SYSTEM</h2>
-            <input type="password" id="pinInput" placeholder="PIN" style="width:100%; text-align:center; font-size:22px; margin-bottom:20px;">
-            <button onclick="checkLogin()" class="btn-cmd" style="background:var(--accent)">ACCEDI</button>
+        <div style="background: var(--card); padding: 40px 30px; border-radius: 28px; width: 100%; max-width: 340px; border: 1px solid rgba(255,255,255,0.03); box-shadow: 0 20px 40px rgba(0,0,0,0.5); text-align: center;">
+            <h2 style="color: var(--text); font-weight: 900; margin-top: 0; margin-bottom: 6px; letter-spacing: -1px; font-size: 26px;">C.A.S. SYSTEM</h2>
+            <p style="color: var(--text-muted); font-size: 13px; margin-top: 0; margin-bottom: 30px; font-weight: 500;">Pannello di Controllo Remoto</p>
+            <input type="password" id="pinInput" placeholder="PIN" inputmode="numeric" pattern="[0-9]*" style="width: 100%; text-align: center; font-size: 26px; margin-bottom: 24px;">
+            <button onclick="checkLogin()" class="btn-cmd" style="background: var(--accent); box-shadow: 0 4px 20px var(--accent-glow);">ACCEDI</button>
         </div>
     </div>
 
     <div id="expired-screen">
-        <h1 style="font-size:60px; margin:0;">⚠️</h1>
-        <h2 style="color:var(--expired);">LICENZA SCADUTA</h2>
-        <p id="expiredDateInfo"></p>
-        <button onclick="logout()" class="btn-cmd" style="background:var(--border); margin-top:20px; width:auto; padding:10px 30px;">INDIETRO</button>
+        <div style="background: rgba(0,0,0,0.3); padding: 40px 30px; border-radius: 28px; max-width: 360px; border: 1px solid rgba(239, 68, 68, 0.2);">
+            <h1 style="font-size: 56px; margin: 0 0 15px 0;">⚠️</h1>
+            <h2 style="color: var(--expired); font-weight: 800; margin-bottom: 10px; letter-spacing: -0.5px;">LICENZA SCADUTA</h2>
+            <p id="expiredDateInfo" style="color: #fca5a5; font-size: 14px; margin: 0 0 30px 0; font-weight: 500;"></p>
+            <button onclick="logout()" class="btn-cmd" style="background: #334155; width: auto; padding: 12px 35px; border-radius: 12px; margin-top: 0;">INDIETRO</button>
+        </div>
     </div>
 
     <div id="main-screen">
         <header>
             <div>
-                <h2 id="clientName" style="margin:0">---</h2>
-                <div id="expiryDisplay" class="scadenza-box" style="margin-top:5px; display:inline-block;">Scadenza: --/--/----</div>
+                <h2 id="clientName" style="margin: 0; color: #fff;">---</h2>
+                <div id="expiryDisplay" class="scadenza-box" style="margin-top: 8px; display: inline-block;">Scadenza: --/--/----</div>
             </div>
             <button onclick="logout()" class="logout-btn">LOGOUT</button>
         </header>
@@ -110,22 +416,24 @@
 
     <div id="overlay">
         <div class="popup">
-            <h2 id="popTitle" style="margin-top:0; color:var(--accent);">MODULO</h2>
+            <h2 id="popTitle" style="margin-top: 0; margin-bottom: 20px; color: #fff; font-weight: 800; font-size: 22px; letter-spacing: -0.5px; text-align: center;">MODULO</h2>
+            
             <div class="section">
                 <span class="section-title">Identificazione</span>
                 <div class="row"><span>Nome Modulo:</span><input type="text" id="set-dev-name" class="wide"></div>
             </div>
+            
             <div class="section">
                 <span class="section-title">Stato Attuale</span>
                 <div class="row" id="popup-timer-row"><span>Tempo Attivo:</span> <span id="view-sec" class="timer-val">00:00</span></div>
-                <div class="row"><span>Incasso:</span> <span id="view-money">0.00€</span></div>
+                <div class="row"><span>Incasso:</span> <span id="view-money" style="font-weight: 700; color: #fff; font-size: 16px;">0.00€</span></div>
                 <div class="row"><span>Qualità Segnale:</span><div id="wifi-indicator" class="wifi-bar-container"></div></div>
-                <div class="row"><span>Ultimo Segnale:</span> <span id="view-lastseen" style="font-size:12px; opacity:0.6;">--</span></div>
+                <div class="row"><span>Ultimo Segnale:</span> <span id="view-lastseen" style="font-size: 13px; font-weight: 500; color: var(--text-muted);">--</span></div>
             </div>
             
             <div class="section" id="params-section"></div>
-
             <div class="section" id="actions-section"></div>
+            
             <button class="close-btn" onclick="closePop()">CHIUDI</button>
         </div>
     </div>
@@ -197,6 +505,8 @@
                 banner.style.display = "block";
                 waLink.href = `https://wa.me/393273524945?text=${messaggio}`;
                 document.getElementById("expiryDisplay").style.background = "#ef4444";
+                document.getElementById("expiryDisplay").style.color = "#fff";
+                document.getElementById("expiryDisplay").style.borderColor = "transparent";
             }
 
             mqttClient = mqtt.connect('wss://4c3d155d119d45b48f9a1d88d1963d9a.s1.eu.hivemq.cloud:8884/mqtt', {
@@ -214,17 +524,13 @@
                     const data = JSON.parse(msg.toString());
                     const m = data.mac.toUpperCase();
                     
-                    // --- CORREZIONE TEMPORALE ROBUSTA ---
                     const oraAttuale = Math.floor(Date.now() / 1000);
                     
-                    // Se ts è presente ed è diverso da 0, applichiamo un controllo intelligente della tolleranza (fusi orari, ecc.)
                     if (data.ts && data.ts !== 0) {
-                        // Tolleranza estesa a 300 secondi per coprire lievi disallineamenti di orologio
                         if (Math.abs(oraAttuale - data.ts) > 300) {
-                            return; // Pacchetto troppo vecchio, scartato
+                            return;
                         }
                     }
-                    // Se ts è 0, significa che l'ESP non ha ancora sincronizzato l'NTP, quindi bypassiamo il controllo temporale ed accettiamo il pacchetto.
 
                     if(data.status === "offline") {
                         if(devices[m]) devices[m].forcedOffline = true;
@@ -260,7 +566,7 @@
             else if (rssi > -90) bars = 1;
             let html = '<div class="wifi-bar-container">';
             for(let i=1; i<=4; i++) {
-                let color = i <= bars ? 'var(--online)' : '#475569';
+                let color = i <= bars ? 'var(--online)' : '#334155';
                 html += `<div class="wifi-bar" style="height:${i*4}px; background:${color}"></div>`;
             }
             return html + '</div>';
@@ -285,15 +591,13 @@
                     dotClass = isBlocked ? 'blocked-status' : 'online';
                 }
 
-                // Determiniamo se è un modulo caffè
                 const isCoffee = d && d.type === "coffee";
 
-                // Se non è caffè e la scheda è online, calcoliamo i minuti e i secondi
                 let timerHtml = "";
                 if (!isCoffee) {
                     const min = (d && isOnline) ? Math.floor(d.sec / 60) : 0;
                     const sec = (d && isOnline) ? Math.floor(d.sec % 60) : 0;
-                    const timerColorStyle = isBlocked ? 'color: var(--blocked); font-weight: bold;' : '';
+                    const timerColorStyle = isBlocked ? 'color: var(--blocked); background: rgba(239, 68, 68, 0.15); font-weight: bold;' : '';
                     timerHtml = `
                         <div class="timer-val" style="${timerColorStyle}">
                             ${isBlocked ? 'SOSPESO' : min.toString().padStart(2,'0') + ':' + sec.toString().padStart(2,'0')}
@@ -311,18 +615,13 @@
             });
         }
 
-function openPop(mac) {
+        function openPop(mac) {
             selectedMac = mac;
             if(devices[mac]) {
                 const d = devices[mac];
                 const isCoffee = d && d.type === "coffee";
-                
-                // Determina l'icona da affiancare alla scritta MODULO
                 const iconaModulo = isCoffee ? " ☕" : " ⏱️";
-                
-                // Aggiorna il titolo del popup inserendo l'icona
                 document.getElementById("popTitle").innerText = "MODULO" + iconaModulo;
-                
                 updatePopupData(d);
             }
             document.getElementById("overlay").style.display = "flex";
@@ -333,7 +632,6 @@ function openPop(mac) {
             const isBlocked = d && d.blocked === true;
             const isCoffee = d && d.type === "coffee";
             
-            // Gestione visibilità riga tempo attivo nel popup
             const timerRow = document.getElementById("popup-timer-row");
             if (isCoffee) {
                 if (timerRow) timerRow.style.display = "none";
@@ -343,7 +641,8 @@ function openPop(mac) {
                     const min = Math.floor(d.sec / 60);
                     const sec = Math.floor(d.sec % 60);
                     document.getElementById("view-sec").innerText = isOnline ? (isBlocked ? "SOSPESO" : `${min.toString().padStart(2,'0')}:${sec.toString().padStart(2,'0')}`) : "--:--";
-                    document.getElementById("view-sec").style.color = isBlocked ? "var(--blocked)" : "#fbbf24";
+                    document.getElementById("view-sec").style.color = isBlocked ? "var(--blocked)" : "var(--gold)";
+                    document.getElementById("view-sec").style.background = isBlocked ? "rgba(239, 68, 68, 0.15)" : "rgba(245, 158, 11, 0.1)";
                 }
             }
             
@@ -374,36 +673,28 @@ function openPop(mac) {
             const paramsSection = document.getElementById("params-section");
             const actionsSection = document.getElementById("actions-section");
 
-            // RILEVAZIONE TIPO DI SCHEDA & COSTRUZIONE FORM PARAMETRI
             if (!isBlocked && paramsSection && document.activeElement.tagName !== 'INPUT') {
                 if (isCoffee) {
-                    // --- MODULO CAFFÈ (4 parametri) ---
-                    // Parametri attesi: costo_b (costo bevanda), imp_c (impulsi per credito), val_u (valore unità credito), t_max (tempo max erogazione)
                     paramsSection.innerHTML = `
                         <span class="section-title">Parametri Macchina Caffè</span>
                         <div class="row"><span>Costo Bevanda €:</span><input type="number" step="0.10" id="set-costo-b"></div>
                         <div class="row"><span>Impulsi per Credito:</span><input type="number" id="set-imp-c"></div>
                         <div class="row"><span>Valore Unità Credito €:</span><input type="number" step="0.01" id="set-val-u"></div>
                         <div class="row"><span>Tempo Max Erog. (sec):</span><input type="number" id="set-t-max"></div>
-                        <button class="btn-cmd" style="background: #10b981;" onclick="saveParams('coffee')">SALVA</button>
+                        <button class="btn-cmd" style="background: #10b981; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);" onclick="saveParams('coffee')">SALVA PARAMETRI</button>
                     `;
-                    // Precompila valori del caffè
                     document.getElementById("set-costo-b").value = d.costo_b !== undefined ? d.costo_b : 0;
                     document.getElementById("set-imp-c").value = d.imp_c !== undefined ? d.imp_c : 0;
                     document.getElementById("set-val-u").value = d.val_u !== undefined ? d.val_u : 0;
                     document.getElementById("set-t-max").value = d.t_max !== undefined ? d.t_max : 0;
-
                 } else {
-                    // --- MODULO TIMER (3 parametri standard) ---
-                    // Parametri attesi: sec_p (sec per scatto), min_i (impulsi minimi), c_val (valore scatto €)
                     paramsSection.innerHTML = `
                         <span class="section-title">Parametri Modulo Timer</span>
                         <div class="row"><span>Sec per Scatto:</span><input type="number" id="set-sec-p"></div>
                         <div class="row"><span>Impulsi Minimi:</span><input type="number" id="set-min-i"></div>
                         <div class="row"><span>Valore Scatto €:</span><input type="number" step="0.1" id="set-c-val"></div>
-                        <button class="btn-cmd" style="background: #10b981;" onclick="saveParams('timer')">SALVA</button>
+                        <button class="btn-cmd" style="background: #10b981; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);" onclick="saveParams('timer')">SALVA PARAMETRI</button>
                     `;
-                    // Precompila valori del timer
                     document.getElementById("set-sec-p").value = d.sec_p !== undefined ? d.sec_p : 0;
                     document.getElementById("set-min-i").value = d.min_i !== undefined ? d.min_i : 0;
                     document.getElementById("set-c-val").value = d.c_val !== undefined ? d.c_val : 0;
@@ -415,7 +706,7 @@ function openPop(mac) {
                 if (actionsSection) {
                     actionsSection.innerHTML = `
                         <span class="section-title" style="color: var(--blocked); font-weight: bold;">⚠️ STATO DISPOSITIVO</span>
-                        <div style="background: #450a0a; padding: 15px; border-radius: 10px; border: 1px solid #ef4444; text-align: center; color: #f87171; font-size: 13px;">
+                        <div style="background: #450a0a; padding: 15px; border-radius: 14px; border: 1px solid #ef4444; text-align: center; color: #f87171; font-size: 13px; line-height: 1.4; font-weight: 500;">
                             <strong>SERVIZIO TEMPORANEAMENTE SOSPESO</strong><br>
                             Contattare l'amministratore del sistema per informazioni o per richiedere lo sblocco del modulo.
                         </div>
@@ -425,11 +716,11 @@ function openPop(mac) {
                 if (actionsSection) {
                     actionsSection.innerHTML = `
                         <span class="section-title">Azioni Rapide</span>
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                            <button class="btn-cmd" style="background:var(--accent)" onclick="sendCmd('REMOTE_START')">AVVIA</button>
-                            <button class="btn-cmd" style="background:#ef4444;" onclick="sendCmd('REMOTE_STOP')">FERMA</button>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                            <button class="btn-cmd" style="background: var(--accent); box-shadow: 0 4px 12px var(--accent-glow);" onclick="sendCmd('REMOTE_START')">AVVIA</button>
+                            <button class="btn-cmd" style="background: #ef4444; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.25);" onclick="sendCmd('REMOTE_STOP')">FERMA</button>
                         </div>
-                        <button class="btn-cmd" style="background:#475569" onclick="sendCmd('RESET_TOTAL')">AZZERA CONTATORE</button>
+                        <button class="btn-cmd" style="background: #334155; margin-top: 12px; font-size: 13px; color: #cbd5e1;" onclick="sendCmd('RESET_TOTAL')">AZZERA CONTATORE INCASSI</button>
                     `;
                 }
             }
@@ -459,6 +750,7 @@ function openPop(mac) {
 
             mqttClient.publish(`cas_system/cmd/${selectedMac}`, JSON.stringify(payload));
             alert("Parametri inviati con successo!");
+            closePop();
             renderGrid();
         }
 
