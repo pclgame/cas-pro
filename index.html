@@ -745,11 +745,11 @@
 
             let payload = { dev: newName };
 
-            if (tipoErogatore === 'coffee') {
-    payload.costo_b = parseFloat(document.getElementById("set-costo-b").value);
-    payload.imp_c = parseInt(document.getElementById("set-imp-c").value);
-    payload.val_u = parseFloat(document.getElementById("set-val-u").value);
-    payload.t_max = parseInt(document.getElementById("set-t-max").value);
+ if (tipoErogatore === 'coffee') {
+    payload.cost = parseFloat(document.getElementById("set-costo-b").value);
+    payload.imp_u = parseInt(document.getElementById("set-imp-c").value);
+    payload.c_val = parseFloat(document.getElementById("set-val-u").value);
+    payload.max_t = parseInt(document.getElementById("set-t-max").value);
 } else {
                 payload.sec_p = parseInt(document.getElementById("set-sec-p").value);
                 payload.min_i = parseInt(document.getElementById("set-min-i").value);
