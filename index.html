@@ -39,7 +39,6 @@
             -webkit-font-smoothing: antialiased;
         }
         
-        /* Schermate Intere */
         #login-screen, #expired-screen { 
             display: flex; 
             align-items: center; 
@@ -80,7 +79,6 @@
             letter-spacing: -0.5px;
         }
         
-        /* Banner Rinnovo */
         .renewal-banner { 
             display: none; 
             background: linear-gradient(90deg, #f59e0b 0%, #d97706 100%); 
@@ -111,7 +109,6 @@
         }
         .renewal-banner a:hover { transform: scale(1.05); }
 
-        /* Scatola Incasso */
         .total-revenue-box { 
             background: linear-gradient(135deg, #131c35 0%, #0d1527 100%);
             padding: 30px 20px; 
@@ -145,10 +142,9 @@
             text-shadow: 0 2px 10px rgba(255,255,255,0.05);
         }
 
-        /* Griglia e Card */
         .grid { 
             display: grid; 
-            grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); 
+            grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); 
             gap: 20px; 
         }
         .device-card { 
@@ -169,7 +165,6 @@
             box-shadow: 0 8px 24px rgba(0,0,0,0.4), 0 0 15px rgba(59, 130, 246, 0.15);
         }
         
-        /* Pallini Stato */
         .status-dot { 
             position: absolute; 
             top: 16px; 
@@ -194,7 +189,7 @@
             font-size: 11px; 
             font-weight: 700; 
             color: var(--text-muted); 
-            margin-bottom: 12px; 
+            margin-bottom: 8px; 
             display: block; 
             text-transform: uppercase; 
             letter-spacing: 0.8px;
@@ -217,8 +212,14 @@
             display: inline-block;
             margin-top: 4px;
         }
+        .card-wifi-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            margin-top: 10px;
+        }
 
-        /* Overlay e Popup Moderni */
         #overlay { 
             display: none; 
             position: fixed; 
@@ -270,7 +271,6 @@
         }
         .row:last-child { margin-bottom: 0; }
 
-        /* Input ed Elementi di Form */
         input { 
             background: #0d1527; 
             border: 1px solid #2e3f5b; 
@@ -293,7 +293,6 @@
         .wifi-bar-container { display: flex; align-items: flex-end; gap: 3px; height: 18px; }
         .wifi-bar { width: 4px; border-radius: 2px; background: #334155; transition: 0.3s; }
         
-        /* Bottoni */
         .btn-cmd { 
             width: 100%; 
             padding: 14px; 
@@ -347,7 +346,6 @@
         }
         .logout-btn:hover { background: rgba(239, 68, 68, 0.1); border-color: #ef4444; }
 
-        /* Animazioni */
         @keyframes pulse {
             0% { transform: scale(1); opacity: 1; }
             50% { transform: scale(1.2); opacity: 0.7; }
@@ -362,7 +360,6 @@
             to { transform: translateY(0); }
         }
 
-        /* Ottimizzazione Campi Login */
         #login-screen input[type="password"] {
             box-sizing: border-box;
             letter-spacing: 6px;
@@ -395,7 +392,7 @@
             <p id="expiredDateInfo" style="color: #fca5a5; font-size: 14px; margin: 0 0 25px 0; font-weight: 500;"></p>
             
             <a id="whatsappExpiredLink" href="#" target="_blank" style="text-decoration: none; display: block; margin-bottom: 15px;"
-               onclick="this.href='https://wa.me/393273524945?text=' + encodeURIComponent('Ciao! La mia licenza è scaduta. Vorrei ricevere le indicazioni e i costi per il rinnovo del dispositivo C.A.S. SYSTEM.\n\nCliente: ' + (currentUser ? currentUser.nome : '---') + '\nScadenza: ' + (currentUser ? new Date(currentUser.scadenza).toLocaleDateString('it-IT') : '---') + '\n\nPiani di rinnovo:\n- 1 Mese: 10€\n- 6 Mesi: 50€ (1 Mese Gratis)\n- 12 Mesi: 90€ (3 Mesi Gratis)');">
+               onclick="this.href='https://wa.me/393273524945?text=' + encodeURIComponent('Ciao! La mia licenza è scaduta. Vorrei ricevere le indicazioni e i costi per il rinnovo del dispositivo C.A.S. SYSTEM.\n\nCliente: ' + (currentUser ? currentUser.nome : '---') + '\nScadenza: ' + (currentUser ? new Date(currentUser.scadenza).toLocaleDateString('it-IT') : '---'));">
                 <button class="btn-cmd" style="background: #25d366; box-shadow: 0 4px 15px rgba(37, 211, 102, 0.3); margin-top: 0; width: 100%;">
                     💬 RINNOVA ORA SU WHATSAPP
                 </button>
@@ -452,6 +449,9 @@
         let selectedMac = null;
         let mqttClient = null;
 
+        // Soglia offline aumentata a 18 secondi per maggiore stabilità
+        const OFFLINE_THRESHOLD = 18000;
+
         window.onload = function() {
             const savedPin = localStorage.getItem("cas_saved_pin");
             if (savedPin) checkLogin(savedPin);
@@ -503,11 +503,7 @@
                 const messaggio = encodeURIComponent(
                     `Ciao! Vorrei rinnovare la licenza per il sistema CAS GESTIONALE REMOTO.\n\n` +
                     `Cliente: ${currentUser.nome}\n` +
-                    `Scadenza attuale: ${expiryDate.toLocaleDateString('it-IT')}\n\n` +
-                    `Piani di rinnovo:\n` +
-                    `- 1 Mese: 10€\n` +
-                    `- 6 Mesi: 50€ (1 Mese Gratis)\n` +
-                    `- 12 Mesi: 90€ (3 Mesi Gratis)`
+                    `Scadenza attuale: ${expiryDate.toLocaleDateString('it-IT')}`
                 );
 
                 banner.style.display = "block";
@@ -533,11 +529,8 @@
                     const m = data.mac.toUpperCase();
                     
                     const oraAttuale = Math.floor(Date.now() / 1000);
-                    
                     if (data.ts && data.ts !== 0) {
-                        if (Math.abs(oraAttuale - data.ts) > 300) {
-                            return;
-                        }
+                        if (Math.abs(oraAttuale - data.ts) > 300) return;
                     }
 
                     if(data.status === "offline") {
@@ -560,22 +553,27 @@
         function updateGrandTotal() {
             let grandTotal = 0;
             Object.values(devices).forEach(d => {
-                const isOnline = d && (Date.now() - d.lastSeen < 12000) && !d.forcedOffline;
+                const isOnline = d && (Date.now() - d.lastSeen < OFFLINE_THRESHOLD) && !d.forcedOffline;
                 if(isOnline && d.money) grandTotal += d.money;
             });
             document.getElementById("grand-total").innerText = grandTotal.toFixed(2) + "€";
         }
 
-        function getWifiIcon(rssi) {
+        function getWifiIcon(rssi, mini = false) {
             let bars = 0;
             if (rssi > -60) bars = 4;
             else if (rssi > -70) bars = 3;
             else if (rssi > -80) bars = 2;
             else if (rssi > -90) bars = 1;
-            let html = '<div class="wifi-bar-container">';
+            
+            let heightFactor = mini ? 3 : 4;
+            let widthFactor = mini ? 3 : 4;
+            let containerHeight = mini ? 12 : 18;
+
+            let html = `<div class="wifi-bar-container" style="height:${containerHeight}px;">`;
             for(let i=1; i<=4; i++) {
                 let color = i <= bars ? 'var(--online)' : '#334155';
-                html += `<div class="wifi-bar" style="height:${i*4}px; background:${color}"></div>`;
+                html += `<div class="wifi-bar" style="width:${widthFactor}px; height:${i*heightFactor}px; background:${color}"></div>`;
             }
             return html + '</div>';
         }
@@ -587,7 +585,7 @@
             currentUser.mac.forEach(m => {
                 const mac = m.trim().toUpperCase();
                 const d = devices[mac];
-                const isOnline = d && (Date.now() - d.lastSeen < 12000) && !d.forcedOffline;
+                const isOnline = d && (Date.now() - d.lastSeen < OFFLINE_THRESHOLD) && !d.forcedOffline;
                 const isBlocked = d && d.blocked === true;
                 const label = (d && d.dev) ? d.dev : "MODULO " + mac.slice(-5);
                 const card = document.createElement("div");
@@ -613,11 +611,22 @@
                     `;
                 }
 
+                let wifiMiniHtml = "";
+                if (isOnline && d.rssi !== undefined) {
+                    wifiMiniHtml = `
+                        <div class="card-wifi-container">
+                            ${getWifiIcon(d.rssi, true)}
+                            <span style="font-size:10px; color:var(--text-muted); font-weight:600;">${d.rssi} dBm</span>
+                        </div>
+                    `;
+                }
+
                 card.innerHTML = `
                     <div class="status-dot ${dotClass}"></div>
                     <span class="dev-name-label">${label} ${isBlocked ? '⚠️' : ''}</span>
                     <div class="money-val">${(d && isOnline) ? d.money.toFixed(2) : '---'}€</div>
                     ${timerHtml}
+                    ${wifiMiniHtml}
                 `;
                 container.appendChild(card);
             });
@@ -636,7 +645,7 @@
         }
 
         function updatePopupData(d) {
-            const isOnline = d && (Date.now() - d.lastSeen < 12000) && !d.forcedOffline;
+            const isOnline = d && (Date.now() - d.lastSeen < OFFLINE_THRESHOLD) && !d.forcedOffline;
             const isBlocked = d && d.blocked === true;
             const isCoffee = d && d.type === "coffee";
             
@@ -689,7 +698,7 @@
                         <div class="row"><span>Impulsi per Credito:</span><input type="number" id="set-imp-c"></div>
                         <div class="row"><span>Valore Unità Credito €:</span><input type="number" step="0.01" id="set-val-u"></div>
                         <div class="row"><span>Tempo Max Erog. (sec):</span><input type="number" id="set-t-max"></div>
-                        <button class="btn-cmd" style="background: #10b981; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);" onclick="saveParams('coffee')">SALVA PARAMETRI</button>
+                        <button id="saveParamBtn" class="btn-cmd" style="background: #10b981; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);" onclick="saveParams('coffee')">SALVA PARAMETRI</button>
                     `;
                     document.getElementById("set-costo-b").value = d.costo_b !== undefined ? d.costo_b : 0;
                     document.getElementById("set-imp-c").value = d.imp_c !== undefined ? d.imp_c : 0;
@@ -701,7 +710,7 @@
                         <div class="row"><span>Sec per Scatto:</span><input type="number" id="set-sec-p"></div>
                         <div class="row"><span>Impulsi Minimi:</span><input type="number" id="set-min-i"></div>
                         <div class="row"><span>Valore Scatto €:</span><input type="number" step="0.1" id="set-c-val"></div>
-                        <button class="btn-cmd" style="background: #10b981; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);" onclick="saveParams('timer')">SALVA PARAMETRI</button>
+                        <button id="saveParamBtn" class="btn-cmd" style="background: #10b981; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);" onclick="saveParams('timer')">SALVA PARAMETRI</button>
                     `;
                     document.getElementById("set-sec-p").value = d.sec_p !== undefined ? d.sec_p : 0;
                     document.getElementById("set-min-i").value = d.min_i !== undefined ? d.min_i : 0;
@@ -745,20 +754,33 @@
 
             let payload = { dev: newName };
 
- if (tipoErogatore === 'coffee') {
-    payload.cost = parseFloat(document.getElementById("set-costo-b").value);
-    payload.imp_u = parseInt(document.getElementById("set-imp-c").value);
-    payload.c_val = parseFloat(document.getElementById("set-val-u").value);
-    payload.max_t = parseInt(document.getElementById("set-t-max").value);
-} else {
+            if (tipoErogatore === 'coffee') {
+                payload.cost = parseFloat(document.getElementById("set-costo-b").value);
+                payload.imp_u = parseInt(document.getElementById("set-imp-c").value);
+                payload.c_val = parseFloat(document.getElementById("set-val-u").value);
+                payload.max_t = parseInt(document.getElementById("set-t-max").value);
+            } else {
                 payload.sec_p = parseInt(document.getElementById("set-sec-p").value);
                 payload.min_i = parseInt(document.getElementById("set-min-i").value);
                 payload.c_val = parseFloat(document.getElementById("set-c-val").value);
             }
 
             mqttClient.publish(`cas_system/cmd/${selectedMac}`, JSON.stringify(payload));
-            alert("Parametri inviati con successo!");
-            closePop();
+
+            // Feedback visivo pulito sul pulsante anziché il classico alert
+            const btn = document.getElementById("saveParamBtn");
+            if(btn) {
+                const originalText = btn.innerText;
+                btn.innerText = "✓ SALVATO!";
+                btn.style.background = "#059669";
+                setTimeout(() => {
+                    btn.innerText = originalText;
+                    btn.style.background = "#10b981";
+                    closePop();
+                }, 800);
+            } else {
+                closePop();
+            }
             renderGrid();
         }
 
