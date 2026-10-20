@@ -576,13 +576,28 @@
             loadHistoryUI();
         }
 
-        // --- GESTIONE STORICO GIORNALIERO E SINCRONIZZAZIONE AZZERAMENTO ---
+// --- GESTIONE STORICO GIORNALIERO CORRETTO ---
         function checkAndSaveDailyHistory(currentGrandTotal) {
-            const oggiStr = new Date().toISOString().split('T')[0]; // Formato YYYY-MM-DD
+            const oggiStr = new Date().toISOString().split('T')[0]; // Data di oggi (YYYY-MM-DD)
             let history = JSON.parse(localStorage.getItem("cas_incassi_storico") || "{}");
+            let dailyBase = JSON.parse(localStorage.getItem("cas_incassi_base") || "{}");
 
-            // Registra o aggiorna il totale corrente per la giornata odierna
-            history[oggiStr] = currentGrandTotal;
+            // Se è un nuovo giorno o non abbiamo una base per oggi, la impostiamo
+            // usando l'incasso attuale come punto di partenza (zero incassi nuovi oggi)
+            if (dailyBase.date !== oggiStr) {
+                dailyBase = {
+                    date: oggiStr,
+                    baseTotal: currentGrandTotal // Totale attuale della macchina al cambio giorno
+                };
+                localStorage.setItem("cas_incassi_base", JSON.stringify(dailyBase));
+            }
+
+            // L'incasso di oggi è la differenza tra il totale attuale e la base di partenza del giorno
+            let incassoOggi = currentGrandTotal - dailyBase.baseTotal;
+            if (incassoOggi < 0) incassoOggi = 0; // Gestisce anche l'eventuale azzeramento fatto sulla macchina
+
+            // Salva nello storico solo l'incasso reale di oggi
+            history[oggiStr] = incassoOggi;
             localStorage.setItem("cas_incassi_storico", JSON.stringify(history));
             loadHistoryUI();
         }
